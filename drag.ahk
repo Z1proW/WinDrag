@@ -127,6 +127,36 @@ winDown := false
 return
 
 
+
+; =========================
+; NATIVE DRAG [ALT VERSION] (Win + Left Mouse)
+; clicks on the title bar
+; =========================
+~LWin & LButton::
+MouseGetPos, mx, my, winId
+if (!winId)
+    return
+
+WinGetPos, x, y, w, h, ahk_id %winId%
+WinActivate, ahk_id %winId%
+
+; approximate title bar position
+titleX := x + (w // 2)
+titleY := y + 10   ; safely inside title bar area
+
+DllCall("SetCursorPos", "int", titleX, "int", titleY)
+
+; simulate real click on title bar
+Send {LButton down}
+return
+
+~LWin & LButton Up::
+Send {LButton up}
+return
+
+
+
+
 ; -----------------------------
 ; Mouse events
 ; -----------------------------
@@ -236,7 +266,9 @@ MouseHook(nCode, wParam, lParam)
     }
 
     ; =========================
-    ; RESIZE WINDOW [ALT VERSION] (RESIZE FROM CENTER)
+    ; RESIZE WINDOW [ALT VERSION] (Win + Right Mouse)
+    ; resizes around the center
+    ; may contain visual artifacts
     ; =========================
     if (ENABLE_RESIZE && !dragging && RESIZE_ALT_VERSION)
     {
