@@ -1,4 +1,10 @@
-﻿#NoEnv
+﻿; =========================
+; Script by Z1proW
+; https://github.com/Z1proW/WinDrag
+; =========================
+
+
+#NoEnv
 #SingleInstance Force
 #Persistent
 SetBatchLines, -1
@@ -10,12 +16,12 @@ CoordMode, Mouse, Screen
 ; SETTINGS
 ; =========================
 global ENABLE_DRAG := true
-global DRAG_ALT_VERSION := true
+global DRAG_ALT_VERSION := false  ; experimental
 
 global ENABLE_CLOSE := true
 
 global ENABLE_RESIZE := true
-global RESIZE_ALT_VERSION := false
+global RESIZE_ALT_VERSION := false  ; experimental
 
 global ENABLE_SNAP := true
 global SNAP_THRESHOLD_TOP_BOT := 50  ; pixels from screen edge
