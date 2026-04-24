@@ -5,6 +5,7 @@ SetBatchLines, -1
 SetWinDelay, -1
 CoordMode, Mouse, Screen
 
+
 ; =========================
 ; SETTINGS
 ; =========================
@@ -13,7 +14,7 @@ global ENABLE_DRAG := true
 global ENABLE_CLOSE := true
 
 global ENABLE_RESIZE := true
-global RESIZE_ALT_VERSION := false
+global RESIZE_ALT_VERSION := true
 
 global ENABLE_SNAP := true
 global SNAP_THRESHOLD_TOP_BOT := 50  ; pixels from screen edge
@@ -22,26 +23,16 @@ global SNAP_LEFT_RIGHT_TILES := false
 global SNAP_HALF := true
 
 
+
 ; =========================
 ; GLOBAL STATE
 ; =========================
 global dragging := false
 global resizing := false
-global resizedWin := 0
-
 global winDown := false
 global winId := 0
-global startMouseX := 0
-global startMouseY := 0
-global startWinX := 0
-global startWinY := 0
-global startWinW := -1
-global startWinH := -1
 
-
-; =========================
-; INSTALL MOUSE HOOK
-; =========================
+; install mouse hook
 global hMod := DllCall("GetModuleHandle", "Ptr", 0, "Ptr")
 global hookProc := RegisterCallback("MouseHook", "StdCall")
 global hook := DllCall("SetWindowsHookEx"
@@ -49,6 +40,8 @@ global hook := DllCall("SetWindowsHookEx"
     , "Ptr", hookProc
     , "Ptr", hMod
     , "UInt", 0)
+
+; keyboard hook
 global kHookProc := RegisterCallback("KeyboardHook", "StdCall")
 global kHook := DllCall("SetWindowsHookEx"
     , "Int", 13  ; WH_KEYBOARD_LL
@@ -57,6 +50,86 @@ global kHook := DllCall("SetWindowsHookEx"
     , "UInt", 0)
 return
 
+
+
+; =========================
+; CLOSE WINDOW (Win + Middle Click)
+; =========================
+~LWin & MButton::
+if (!ENABLE_CLOSE)
+    return
+
+MouseGetPos,,, winId
+; ignore invalid windows
+if (!IsRealWindow(winId))
+    return
+
+; Exclude Start menu and taskbar
+WinGetClass, cls, ahk_id %winId%
+WinGet, exe, ProcessName, ahk_id %winId%
+if (exe = "StartMenuExperienceHost.exe"
+|| exe = "SearchHost.exe"
+|| cls = "Windows.UI.Core.CoreWindow"
+|| cls = "Shell_TrayWnd"
+|| cls = "Shell_SecondaryTrayWnd")
+    return
+
+WinClose, ahk_id %winId%
+return
+
+
+
+; =========================
+; RESIZE WINDOW (Win + Right Mouse)
+; =========================
+~LWin & RButton::
+if (!ENABLE_CLOSE)
+    return
+if (dragging)
+    return
+
+MouseGetPos,,, winId
+; ignore invalid windows
+if (!IsRealWindow(winId))
+    return
+
+; Exclude Start menu and taskbar
+WinGetClass, cls, ahk_id %winId%
+WinGet, exe, ProcessName, ahk_id %winId%
+if (exe = "StartMenuExperienceHost.exe"
+ || exe = "SearchHost.exe"
+ || cls = "Windows.UI.Core.CoreWindow"
+ || cls = "Shell_TrayWnd"
+ || cls = "Shell_SecondaryTrayWnd")
+    return
+                    
+; Exclude maximized Windows
+WinGet, wasMax, MinMax, ahk_id %winId%
+if (wasMax = 1)
+    return
+                        
+WinActivate, ahk_id %winId%
+DllCall("ReleaseCapture")
+PostMessage, 0xA1, 17,,, ahk_id %winId% ; 17 = HTBOTTOMRIGHT
+resizing := true
+return
+
+~LWin & RButton up::
+if (!ENABLE_RESIZE)
+    return
+if (dragging)
+    return
+
+PostMessage, 0x202, 0,,, ahk_id %winId% ; Exit resize
+resizing := false
+winId := 0
+winDown := false
+return
+
+
+; -----------------------------
+; Mouse events
+; -----------------------------
 MouseHook(nCode, wParam, lParam)
 {
     global dragging, winId
@@ -71,7 +144,6 @@ MouseHook(nCode, wParam, lParam)
     {
         winId := 0
         dragging := false
-        resizing := false
         return CallNextHook(hook, nCode, wParam, lParam)
     }
     ; now LWin is pressed (or a drag/resize is still active)
@@ -164,119 +236,63 @@ MouseHook(nCode, wParam, lParam)
     }
 
     ; =========================
-    ; RESIZE LOGIC
+    ; RESIZE WINDOW [ALT VERSION] (RESIZE FROM CENTER)
     ; =========================
-    if (ENABLE_RESIZE && !dragging)
+    if (ENABLE_RESIZE && !dragging && RESIZE_ALT_VERSION)
     {
-
-        ; -----------------------------
-        ; [VERSION 1] RESIZE FROM BOTTOM RIGHT
-        ; -----------------------------
-        if (!RESIZE_ALT_VERSION)
+        if (wParam = 0x204) ; WM_RBUTTONDOWN
         {
-            if (wParam = 0x204) ; WM_RBUTTONDOWN
-            {
-                MouseGetPos,,, winId
+            MouseGetPos,,, winId
 
-                ; ignore invalid windows
-                if (!IsRealWindow(winId))
-                    return CallNextHook(hook, nCode, wParam, lParam)
+            ; ignore invalid windows
+            if (!IsRealWindow(winId))
+                return CallNextHook(hook, nCode, wParam, lParam)
 
-                WinActivate, ahk_id %winId%
+            ; Exclude Start menu and taskbar
+            WinGetClass, winClass, ahk_id %winId%
+            WinGet, winExe, ProcessName, ahk_id %winId%
+            if (winExe = "StartMenuExperienceHost.exe"
+             || winExe = "SearchHost.exe"
+             || winClass = "Windows.UI.Core.CoreWindow"
+             || winClass = "Shell_TrayWnd"
+             || winClass = "Shell_SecondaryTrayWnd") {
+                return CallNextHook(hook, nCode, wParam, lParam)
+            }
 
-                ; Exclude Start menu and taskbar
-                WinGetClass, winClass, ahk_id %winId%
-                WinGet, winExe, ProcessName, ahk_id %winId%
-                if (winExe = "StartMenuExperienceHost.exe"
-                    || winExe = "SearchHost.exe"
-                    || winClass = "Windows.UI.Core.CoreWindow"
-                    || winClass = "Shell_TrayWnd"
-                    || winClass = "Shell_SecondaryTrayWnd") {
-                    return CallNextHook(hook, nCode, wParam, lParam)
-                }
+            ; Exclude maximized Windows
+            WinGet, wasMax, MinMax, ahk_id %winId%
+            if (wasMax = 1)
+                return CallNextHook(hook, nCode, wParam, lParam)
 
-                ; Exclude maximized Windows
-                WinGet, wasMax, MinMax, ahk_id %winId%
-                if (wasMax = 1)
-                    return CallNextHook(hook, nCode, wParam, lParam)
+            WinRestore, ahk_id %winId%
                     
-
-                PostMessage, 0xA1, 17,,, ahk_id %winId% ; 17 = HTBOTTOMRIGHT
-                resizing := true
-                return 1 ; don't pass click event to OS
-            }
-            else if (wParam = 0x205 && resizing) ; WM_RBUTTONUP
-            {
-                ; This ensures Windows exits resize tracking cleanly
-                PostMessage, 0x202, 0,,, ahk_id %winId%  ; WM_LBUTTONUP equivalent cleanup
-
-                resizing := false
-                winId := 0
-                winDown := false
-                CloseStartMenu()
-                return 1 ; don't pass click event to OS
-            }
+            MouseGetPos, startMouseX, startMouseY
+            WinGetPos, startWinX, startWinY, startWinW, startWinH, ahk_id %winId%
+            resizing := true
+            return 1 ; don't pass click event to OS
         }
-    
-
-        ; -----------------------------
-        ; [VERSION 2] RESIZE FROM CENTER (VISUAL GLITCHES)
-        ; -----------------------------
-        if (RESIZE_ALT_VERSION)
+        else if (wParam = 0x200 && resizing) ; WM_MOUSEMOVE
         {
-            if (wParam = 0x204) ; WM_RBUTTONDOWN
-            {
-                MouseGetPos,,, winId
-
-                ; ignore invalid windows
-                if (!IsRealWindow(winId))
-                    return CallNextHook(hook, nCode, wParam, lParam)
-
-                ; Exclude Start menu and taskbar
-                WinGetClass, winClass, ahk_id %winId%
-                WinGet, winExe, ProcessName, ahk_id %winId%
-                if (winExe = "StartMenuExperienceHost.exe"
-                    || winExe = "SearchHost.exe"
-                    || winClass = "Windows.UI.Core.CoreWindow"
-                    || winClass = "Shell_TrayWnd"
-                    || winClass = "Shell_SecondaryTrayWnd") {
-                    return CallNextHook(hook, nCode, wParam, lParam)
-                }
-
-                ; Exclude maximized Windows
-                WinGet, wasMax, MinMax, ahk_id %winId%
-                if (wasMax = 1)
-                    return CallNextHook(hook, nCode, wParam, lParam)
-                    
-                MouseGetPos, startMouseX, startMouseY
-                WinGetPos, startWinX, startWinY, startWinW, startWinH, ahk_id %winId%
-                resizing := true
-                return 1 ; don't pass click event to OS
-            }
-            else if (wParam = 0x200 && resizing) ; WM_MOUSEMOVE
-            {
-                MouseGetPos, curX, curY
-                dx := curX - startMouseX
-                dy := curY - startMouseY
-                DllCall("SetWindowPos"
-                    , "ptr", winId
-                    , "ptr", 0
-                    , "int", startWinX - dx // 2
-                    , "int", startWinY - dy // 2
-                    , "int", startWinW + dx
-                    , "int", startWinH + dy
-                    , "uint", 0x0010 | 0x0004) ; SWP_NOACTIVATE | SWP_NOZORDER
-            }
-            else if (wParam = 0x205 && resizing) ; WM_RBUTTONUP
-            {
-                resizing := false
-                winId := 0
-                winDown := false
-                CloseStartMenu()
-                return 1 ; don't pass click event to OS
-            }
+            MouseGetPos, curX, curY
+            dx := curX - startMouseX
+            dy := curY - startMouseY
+            DllCall("SetWindowPos"
+                , "ptr", winId
+                , "ptr", 0
+                , "int", startWinX - dx // 2
+                , "int", startWinY - dy // 2
+                , "int", startWinW + dx
+                , "int", startWinH + dy
+                , "uint", 0x0010 | 0x0004) ; SWP_NOACTIVATE | SWP_NOZORDER
         }
-
+        else if (wParam = 0x205 && resizing) ; WM_RBUTTONUP
+        {
+            resizing := false
+            winId := 0
+            winDown := false
+            CloseStartMenu()
+            return 1 ; don't pass click event to OS
+        }
     }
     return CallNextHook(hook, nCode, wParam, lParam)
 }
@@ -410,6 +426,7 @@ SnapWindow(winId, curX, curY)
     return 0
 }
 
+; calling this prevents opening start menu by pressing Esc before LWin release
 CloseStartMenu()
 {
     DllCall("keybd_event", "UChar", 0x1B, "UChar", 0, "UInt", 0, "UPtr", 0) ; Esc Down
@@ -429,7 +446,6 @@ KeyboardHook(nCode, wParam, lParam)
 {
     global winDown, kHook
     global dragging, resizing
-    global resizedWin
 
     if (nCode < 0)
         return CallNextHook(kHook, nCode, wParam, lParam)
@@ -443,21 +459,12 @@ KeyboardHook(nCode, wParam, lParam)
             winDown := true
             winId := 0
             dragging := false
-            resizing := false
         }
-        else if (wParam = 0x101) ; WM_KEYUP
+        else if (wParam = 0x101 && dragging) ; WM_KEYUP
         {
-            if (resizing)
-            {
-                PostMessage, 0x202, 0,,, ahk_id %winId%  ; WM_LBUTTONUP equivalent cleanup
-            }
-            if (dragging || resizing)
-            {
-                CloseStartMenu()
-                winId := 0
-                dragging := false
-                resizing := false
-            }
+            CloseStartMenu()
+            winId := 0
+            dragging := false
         }
     }
 
@@ -473,7 +480,7 @@ IsRealWindow(hwnd)
     ; must be visible
     if !DllCall("IsWindowVisible", "Ptr", hwnd)
         return false
-
+    
     ; skip cloaked (UWP, previews, virtual desktops)
     cloaked := 0
     if (DllCall("dwmapi\DwmGetWindowAttribute"
@@ -485,7 +492,7 @@ IsRealWindow(hwnd)
         if (cloaked)
             return false
     }
-
+    
     ; skip tool windows (common for previews)
     WinGet, exStyle, ExStyle, ahk_id %hwnd%
     if (exStyle & 0x80) ; WS_EX_TOOLWINDOW
@@ -523,27 +530,4 @@ if (hook)
 if (hookProc)
     DllCall("GlobalFree", "Ptr", hookProc), hookProc := 0
 ExitApp
-return
-
-
-; =========================
-; CLOSE WINDOW (Win + Middle Click)
-; =========================
-~LWin & MButton::
-MouseGetPos,,, winId
-; ignore invalid windows
-if (!IsRealWindow(windowId))
-    return
-
-; Exclude Start menu and taskbar
-WinGetClass, cls, ahk_id %winId%
-WinGet, exe, ProcessName, ahk_id %winId%
-if (exe = "StartMenuExperienceHost.exe"
-|| exe = "SearchHost.exe"
-|| cls = "Windows.UI.Core.CoreWindow"
-|| winClass = "Shell_TrayWnd"
-|| winClass = "Shell_SecondaryTrayWnd")
-    return
-
-WinClose, ahk_id %winId%
 return
