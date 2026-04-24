@@ -10,16 +10,17 @@ CoordMode, Mouse, Screen
 ; SETTINGS
 ; =========================
 global ENABLE_DRAG := true
+global DRAG_ALT_VERSION := true
 
 global ENABLE_CLOSE := true
 
 global ENABLE_RESIZE := true
-global RESIZE_ALT_VERSION := true
+global RESIZE_ALT_VERSION := false
 
 global ENABLE_SNAP := true
 global SNAP_THRESHOLD_TOP_BOT := 50  ; pixels from screen edge
 global SNAP_THRESHOLD_LEFT_RIGHT := 50
-global SNAP_LEFT_RIGHT_TILES := true
+global SNAP_LEFT_RIGHT_TILES := false  ; only for default drag version
 global SNAP_HALF := true
 
 
@@ -130,9 +131,14 @@ return
 
 ; =========================
 ; NATIVE DRAG [ALT VERSION] (Win + Left Mouse)
-; clicks on the title bar
+; moves mouse on the title bar
 ; =========================
 ~LWin & LButton::
+if (!ENABLE_DRAG)
+    return
+if (!DRAG_ALT_VERSION)
+    return
+
 MouseGetPos, mx, my, winId
 if (!winId)
     return
@@ -151,6 +157,10 @@ Send {LButton down}
 return
 
 ~LWin & LButton Up::
+if (!ENABLE_DRAG)
+    return
+if (!DRAG_ALT_VERSION)
+    return
 Send {LButton up}
 return
 
@@ -181,7 +191,7 @@ MouseHook(nCode, wParam, lParam)
     ; =========================
     ; DRAG LOGIC
     ; =========================
-    if (ENABLE_DRAG && !resizing)
+    if (ENABLE_DRAG && !resizing && !DRAG_ALT_VERSION)
     {
         if (wParam = 0x201 && GetKeyState("LWin", "P")) ; WM_LBUTTONDOWN
         {
