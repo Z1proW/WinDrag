@@ -19,7 +19,7 @@ global RESIZE_ALT_VERSION := true
 global ENABLE_SNAP := true
 global SNAP_THRESHOLD_TOP_BOT := 50  ; pixels from screen edge
 global SNAP_THRESHOLD_LEFT_RIGHT := 50
-global SNAP_LEFT_RIGHT_TILES := false
+global SNAP_LEFT_RIGHT_TILES := true
 global SNAP_HALF := true
 
 
@@ -334,43 +334,6 @@ SnapWindow(winId, curX, curY)
         ; =========================
         if (SNAP_HALF)
         {
-            /*
-            width := monWorkRight - monWorkLeft
-            height := monWorkBottom - monWorkTop
-
-            SysGet, monWork, Monitor, %A_Index%
-            ; LEFT
-            if (curX <= monLeft + SNAP_THRESHOLD_LEFT_RIGHT)
-            {
-                WinRestore, ahk_id %winId%
-                DllCall("SetWindowPos"
-                    , "Ptr", winId
-                    , "Ptr", 0
-                    , "Int", monWorkLeft
-                    , "Int", monWorkTop
-                    , "Int", Floor(width / 2)
-                    , "Int", height
-                    , "UInt", 0x0040 | 0x0004) ; SWP_SHOWWINDOW | SWP_NOZORDER
-                return 1
-            }
-
-            ; RIGHT
-            if (curX >= monRight - SNAP_THRESHOLD_LEFT_RIGHT)
-            {
-                WinRestore, ahk_id %winId%
-                DllCall("SetWindowPos"
-                    , "Ptr", winId
-                    , "Ptr", 0
-                    , "Int", monWorkLeft + (Floor(width / 2))
-                    , "Int", monWorkTop
-                    , "Int", Floor(width / 2)
-                    , "Int", height
-                    , "UInt", 0x0040 | 0x0004)
-                return 1
-            }
-            */
-
-
             width := monRight - monLeft
             height := monBottom - monTop
 
