@@ -15,19 +15,22 @@ CoordMode, Mouse, Screen
 ; =========================
 ; SETTINGS
 ; =========================
-global ENABLE_DRAG := true
+global ENABLE_DRAG := true  ; Win + Left-click drag to move windows
 global DRAG_ALT_VERSION := false  ; experimental
 
-global ENABLE_CLOSE := true
+global ENABLE_CLOSE := true  ; Win + middle-click to close
+global MINIMIZE_INSTEAD := false  ; if true, Win + middle-click will minimize instead of close
 
-global ENABLE_RESIZE := true
+global ENABLE_RESIZE := true  ; Win + right-click drag to resize
 global RESIZE_ALT_VERSION := false  ; experimental
 
-global ENABLE_SNAP := true
-global SNAP_THRESHOLD_TOP_BOT := 50  ; pixels from screen edge
-global SNAP_THRESHOLD_LEFT_RIGHT := 50
-global SNAP_LEFT_RIGHT_TILES := false  ; only for default drag version
-global SNAP_HALF := true
+global ENABLE_SNAP := true  ; enable dragging windows to screen edges to snap/resize them
+global SNAP_HALF := true  ; if false, windows will not snap to left/right edges
+global SNAP_MAXIMIZE := true  ; if false, dragging to top edge will not maximize
+global SNAP_MINIMIZE := true  ; if false, dragging to bottom edge will not minimize
+global SNAP_THRESHOLD_TOP_BOT := 50  ; distance (pixels) from top/bottom edge to trigger maximize/minimize
+global SNAP_THRESHOLD_LEFT_RIGHT := 50  ; distance from left/right edge to trigger snap
+global SNAP_LEFT_RIGHT_TILES := false  ; if true, left/right snap will trigger on the entire screen, effectively tiling the window
 
 
 
@@ -80,6 +83,12 @@ if (exe = "StartMenuExperienceHost.exe"
 || cls = "Shell_TrayWnd"
 || cls = "Shell_SecondaryTrayWnd")
     return
+
+if (MINIMIZE_INSTEAD)
+{
+    WinMinimize, ahk_id %winId%
+    return
+}
 
 WinClose, ahk_id %winId%
 return
@@ -362,7 +371,7 @@ SnapWindow(winId, curX, curY)
         ; =========================
         ; TOP EDGE -> MAXIMIZE
         ; =========================
-        if (curY <= monTop + SNAP_THRESHOLD_TOP_BOT)
+        if (SNAP_MAXIMIZE && curY <= monTop + SNAP_THRESHOLD_TOP_BOT)
         {
             WinMaximize, ahk_id %winId%
             return 1
@@ -371,7 +380,7 @@ SnapWindow(winId, curX, curY)
         ; =========================
         ; BOTTOM EDGE -> MINIMIZE
         ; =========================
-        if (curY >= monBottom - SNAP_THRESHOLD_TOP_BOT)
+        if (SNAP_MINIMIZE && curY >= monBottom - SNAP_THRESHOLD_TOP_BOT)
         {
             WinMinimize, ahk_id %winId%
             return 1

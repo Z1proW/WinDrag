@@ -50,19 +50,22 @@ Supports multi-monitor setups.
 You can tweak behavior in the settings section:
 
 ``` ahk
-global ENABLE_DRAG := true
+global ENABLE_DRAG := true  ; Win + Left-click drag to move windows
 global DRAG_ALT_VERSION := false  ; experimental
 
-global ENABLE_CLOSE := true
+global ENABLE_CLOSE := true  ; Win + middle-click to close
+global MINIMIZE_INSTEAD := false  ; if true, Win + middle-click will minimize instead of close
 
-global ENABLE_RESIZE := true
+global ENABLE_RESIZE := true  ; Win + right-click drag to resize
 global RESIZE_ALT_VERSION := false  ; experimental
 
-global ENABLE_SNAP := true
-global SNAP_THRESHOLD_TOP_BOT := 50  ; pixels from screen edge
-global SNAP_THRESHOLD_LEFT_RIGHT := 50
-global SNAP_LEFT_RIGHT_TILES := false  ; only for default drag version
-global SNAP_HALF := true
+global ENABLE_SNAP := true  ; enable dragging windows to screen edges to snap/resize them
+global SNAP_HALF := true  ; if false, windows will not snap to left/right edges
+global SNAP_MAXIMIZE := true  ; if false, dragging to top edge will not maximize
+global SNAP_MINIMIZE := true  ; if false, dragging to bottom edge will not minimize
+global SNAP_THRESHOLD_TOP_BOT := 50  ; distance (pixels) from top/bottom edge to trigger maximize/minimize
+global SNAP_THRESHOLD_LEFT_RIGHT := 50  ; distance from left/right edge to trigger snap
+global SNAP_LEFT_RIGHT_TILES := false  ; if true, left/right snap will trigger on the entire screen, effectively tiling the window
 ```
 
 ------------------------------------------------------------------------
@@ -72,23 +75,17 @@ global SNAP_HALF := true
 -   Hold **LWin + drag** → move window
 -   Drag to screen edge → release → snap action
 -   **LWin + Right Click** → resize
--   **LWin + Middle Click** → close window
+-   **LWin + Middle Click** → close window (or minimize)
 
 ------------------------------------------------------------------------
 
 ## 📦 Requirements
 
 * Windows 10 / 11
-* AutoHotkey v1.1+ (only if running the `.ahk` script)
+* [AutoHotkey v1.1+](https://www.autohotkey.com/)
 
 ### ▶️ Running the script
 
-You have two options:
-
-* **Precompiled version:**
-  Download and run `winDrag.exe` — no installation required.
-
-* **Script version:**
   Download `winDrag.ahk` and run it with [AutoHotkey](https://www.autohotkey.com/)
 
 ---
