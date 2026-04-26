@@ -91,7 +91,15 @@ global SNAP_LEFT_RIGHT_TILES := false  ; if true, left/right snap will trigger o
 
 ### ▶️ Running the script
 
+You have two options:
+
+* **Script version:**
   Download `winDrag.ahk` and run it with [AutoHotkey](https://www.autohotkey.com/)
+  Recommended for advanced customization.
+
+* **Precompiled version:**
+  Download and run `winDrag.exe`, no installation required.
+  [Download latest release](https://github.com/Z1proW/WinDrag/releases)
 
 ---
 
