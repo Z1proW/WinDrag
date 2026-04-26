@@ -45,6 +45,11 @@ Supports multi-monitor setups.
 
 ------------------------------------------------------------------------
 
+## Video Demo
+
+https://github.com/user-attachments/assets/7ecf3290-65a8-4647-8a65-e2ec6ce8db84
+
+------------------------------------------------------------------------
 ## ⚙️ Configuration
 
 You can tweak behavior in the settings section:
