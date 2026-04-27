@@ -280,6 +280,33 @@ GuiClose(GuiHwnd)
     Reload
 }
 
+ApplySettingsToGui()
+{
+    GuiControl,, ENABLE_DRAG, %ENABLE_DRAG%
+    GuiControl,, DRAG_ALT_VERSION, %DRAG_ALT_VERSION%
+
+    GuiControl,, ENABLE_CLOSE, %ENABLE_CLOSE%
+    GuiControl,, MINIMIZE_INSTEAD, %MINIMIZE_INSTEAD%
+
+    GuiControl,, ENABLE_RESIZE, %ENABLE_RESIZE%
+    GuiControl,, RESIZE_ALT_VERSION, %RESIZE_ALT_VERSION%
+
+    GuiControl,, ENABLE_SNAP, %ENABLE_SNAP%
+    GuiControl,, SNAP_HALF, %SNAP_HALF%
+    GuiControl,, SNAP_MAXIMIZE, %SNAP_MAXIMIZE%
+    GuiControl,, SNAP_MINIMIZE, %SNAP_MINIMIZE%
+    GuiControl,, SNAP_LEFT_RIGHT_TILES, %SNAP_LEFT_RIGHT_TILES%
+
+    GuiControl,, SNAP_THRESHOLD_LEFT_RIGHT, %SNAP_THRESHOLD_LEFT_RIGHT%
+    GuiControl,, SNAP_THRESHOLD_TOP_BOT, %SNAP_THRESHOLD_TOP_BOT%
+
+    GuiControl,, ENABLE_ALWAYS_ON_TOP, %ENABLE_ALWAYS_ON_TOP%
+    GuiControl,, ALWAYS_ON_TOP_KEYBIND, %ALWAYS_ON_TOP_KEYBIND%
+
+    Gosub, UpdateSnapMode
+    Gosub, UpdateSettingsButtons
+}
+
 
 RestoreDefaults:
 MsgBox, 4,, Reset all settings to defaults? (This will overwrite current settings and create a backup)
@@ -291,8 +318,8 @@ if FileExist(SettingsFile)
     FileMove, %SettingsFile%, %SettingsFile%.bak, 1  ; overwrite existing backup
 }
 
-Gosub, UpdateSettingsButtons
-Reload
+Gosub, LoadSettingsFromDisk  ; this will load defaults since settings.ini is now gone
+ApplySettingsToGui()
 
 return
 
@@ -307,13 +334,12 @@ if !FileExist(SettingsFile ".bak")
     MsgBox, Backup file not found!
     return
 }
-FileMove, %SettingsFile%, %SettingsFile%.bak2, 1  ; create temp backup of current settings
+FileMove, %SettingsFile%, %SettingsFile%.tmp, 1  ; create temp backup of current settings
 FileMove, %SettingsFile%.bak, %SettingsFile%, 1  ; restore backup
-FileMove, %SettingsFile%.bak2, %SettingsFile%.bak, 1  ; move temp backup to .bak
+FileMove, %SettingsFile%.tmp, %SettingsFile%.bak, 1  ; move temp backup to .bak
 
-Gosub, UpdateSettingsButtons
-Reload
-
+Gosub, LoadSettingsFromDisk
+ApplySettingsToGui()
 return
 
 
