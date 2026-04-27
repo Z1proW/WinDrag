@@ -12,6 +12,8 @@ SetWinDelay, -1
 CoordMode, Mouse, Screen
 
 
+SettingsFile := A_ScriptDir "\settings.ini"
+
 ; =========================
 ; SETTINGS
 ; =========================
@@ -37,18 +39,16 @@ global ALWAYS_ON_TOP_KEYBIND := "A"  ; key to toggle always-on-top (used with Wi
 
 
 ; =========================
-; KEYBINDS
+; DEFAULT KEYBINDS
 ; =========================
 ; always on top keybind
 Hotkey, LWin & %ALWAYS_ON_TOP_KEYBIND%, ToggleAlwaysOnTop
 
-; add more keybinds here if needed
-
 
 
 
 ; =========================
-; GLOBAL STATE
+; LOAD GLOBAL STATE
 ; =========================
 global dragging := false
 global resizing := false
@@ -71,6 +71,33 @@ global kHook := DllCall("SetWindowsHookEx"
     , "Ptr", kHookProc
     , "Ptr", hMod
     , "UInt", 0)
+
+
+; load settings from file
+Gosub, LoadSettings
+LoadSettings:
+IniRead, ENABLE_DRAG, %SettingsFile%, Settings, ENABLE_DRAG, 1
+IniRead, DRAG_ALT_VERSION, %SettingsFile%, Settings, DRAG_ALT_VERSION, 0
+
+IniRead, ENABLE_CLOSE, %SettingsFile%, Settings, ENABLE_CLOSE, 1
+IniRead, MINIMIZE_INSTEAD, %SettingsFile%, Settings, MINIMIZE_INSTEAD, 0
+
+IniRead, ENABLE_RESIZE, %SettingsFile%, Settings, ENABLE_RESIZE, 1
+IniRead, RESIZE_ALT_VERSION, %SettingsFile%, Settings, RESIZE_ALT_VERSION, 0
+
+IniRead, ENABLE_SNAP, %SettingsFile%, Settings, ENABLE_SNAP, 1
+IniRead, SNAP_HALF, %SettingsFile%, Settings, SNAP_HALF, 1
+IniRead, SNAP_MAXIMIZE, %SettingsFile%, Settings, SNAP_MAXIMIZE, 1
+IniRead, SNAP_MINIMIZE, %SettingsFile%, Settings, SNAP_MINIMIZE, 1
+
+IniRead, SNAP_THRESHOLD_TOP_BOT, %SettingsFile%, Settings, SNAP_THRESHOLD_TOP_BOT, 50
+IniRead, SNAP_THRESHOLD_LEFT_RIGHT, %SettingsFile%, Settings, SNAP_THRESHOLD_LEFT_RIGHT, 50
+IniRead, SNAP_LEFT_RIGHT_TILES, %SettingsFile%, Settings, SNAP_LEFT_RIGHT_TILES, 0
+
+IniRead, ENABLE_ALWAYS_ON_TOP, %SettingsFile%, Settings, ENABLE_ALWAYS_ON_TOP, 1
+IniRead, ALWAYS_ON_TOP_KEYBIND, %SettingsFile%, Settings, ALWAYS_ON_TOP_KEYBIND, A
+
+return
 
 
 
@@ -242,16 +269,6 @@ MouseGetPos,,, winId
 if (!IsRealWindow(winId))
     return
 
-; Exclude Start menu and taskbar
-WinGetClass, cls, ahk_id %winId%
-WinGet, exe, ProcessName, ahk_id %winId%
-if (exe = "StartMenuExperienceHost.exe"
-|| exe = "SearchHost.exe"
-|| cls = "Windows.UI.Core.CoreWindow"
-|| cls = "Shell_TrayWnd"
-|| cls = "Shell_SecondaryTrayWnd")
-    return
-
 if (MINIMIZE_INSTEAD)
 {
     WinMinimize, ahk_id %winId%
@@ -275,16 +292,6 @@ if (dragging)
 MouseGetPos,,, winId
 ; ignore invalid windows
 if (!IsRealWindow(winId))
-    return
-
-; Exclude Start menu and taskbar
-WinGetClass, cls, ahk_id %winId%
-WinGet, exe, ProcessName, ahk_id %winId%
-if (exe = "StartMenuExperienceHost.exe"
- || exe = "SearchHost.exe"
- || cls = "Windows.UI.Core.CoreWindow"
- || cls = "Shell_TrayWnd"
- || cls = "Shell_SecondaryTrayWnd")
     return
                     
 ; Exclude maximized Windows
@@ -363,16 +370,6 @@ WinGet, activeWindow, ID, A
 if (!IsRealWindow(activeWindow))
     return
 
-; Exclude Start menu and taskbar
-WinGetClass, cls, ahk_id %activeWindow%
-WinGet, exe, ProcessName, ahk_id %activeWindow%
-if (exe = "StartMenuExperienceHost.exe"
-|| exe = "SearchHost.exe"
-|| cls = "Windows.UI.Core.CoreWindow"
-|| cls = "Shell_TrayWnd"
-|| cls = "Shell_SecondaryTrayWnd")
-    return
-
 Winset, Alwaysontop, , A
 return
 
@@ -412,17 +409,6 @@ MouseHook(nCode, wParam, lParam)
             ; ignore invalid windows
             if (!IsRealWindow(winId))
                 return CallNextHook(hook, nCode, wParam, lParam)
-
-            ; Exclude Start menu and taskbar
-            WinGetClass, winClass, ahk_id %winId%
-            WinGet, winExe, ProcessName, ahk_id %winId%
-            if (winExe = "StartMenuExperienceHost.exe"
-                || winExe = "SearchHost.exe"
-                || winClass = "Windows.UI.Core.CoreWindow"
-                || winClass = "Shell_TrayWnd"
-                || winClass = "Shell_SecondaryTrayWnd") {
-                return CallNextHook(hook, nCode, wParam, lParam)
-            }
 
             WinActivate, ahk_id %winId%
 
@@ -501,17 +487,6 @@ MouseHook(nCode, wParam, lParam)
             ; ignore invalid windows
             if (!IsRealWindow(winId))
                 return CallNextHook(hook, nCode, wParam, lParam)
-
-            ; Exclude Start menu and taskbar
-            WinGetClass, winClass, ahk_id %winId%
-            WinGet, winExe, ProcessName, ahk_id %winId%
-            if (winExe = "StartMenuExperienceHost.exe"
-             || winExe = "SearchHost.exe"
-             || winClass = "Windows.UI.Core.CoreWindow"
-             || winClass = "Shell_TrayWnd"
-             || winClass = "Shell_SecondaryTrayWnd") {
-                return CallNextHook(hook, nCode, wParam, lParam)
-            }
 
             ; Exclude maximized Windows
             WinGet, wasMax, MinMax, ahk_id %winId%
@@ -720,28 +695,54 @@ IsRealWindow(hwnd)
         return false
 
     ; ignore Taskbar
-    MouseGetPos,,, hoveredWin
-    WinGetClass, hoverClass, ahk_id %hoveredWin%
-    if (hoverClass = "Shell_TrayWnd"
-    || hoverClass = "Shell_SecondaryTrayWnd")
+    WinGetClass, cls, ahk_id %hwnd%
+    if (cls = "Shell_TrayWnd"
+    || cls = "Shell_SecondaryTrayWnd")
         return false
     
     ; ignore sys ui
-    if (hoverClass = "Button"
-    || hoverClass = "SysPager"
-    || hoverClass = "Windows.UI.Core.CoreWindow")
+    if (cls = "Button"
+    || cls = "SysPager"
+    || cls = "Windows.UI.Core.CoreWindow")
         return false
+
+    ; ignore Start menu
+    WinGet, exe, ProcessName, ahk_id %hwnd%
+    if (exe = "StartMenuExperienceHost.exe"
+    || exe = "SearchHost.exe")
+        return
 
     return true
 }
 
 ; =========================
-; CLEAN EXIT
+; SAVE SETTINGS AND EXIT
 ; =========================
-OnExit, Cleanup
-return
-
 Cleanup:
+
+; write settings
+IniWrite, %ENABLE_DRAG%, %SettingsFile%, Settings, ENABLE_DRAG
+IniWrite, %DRAG_ALT_VERSION%, %SettingsFile%, Settings, DRAG_ALT_VERSION
+
+IniWrite, %ENABLE_CLOSE%, %SettingsFile%, Settings, ENABLE_CLOSE
+IniWrite, %MINIMIZE_INSTEAD%, %SettingsFile%, Settings, MINIMIZE_INSTEAD
+
+IniWrite, %ENABLE_RESIZE%, %SettingsFile%, Settings, ENABLE_RESIZE
+IniWrite, %RESIZE_ALT_VERSION%, %SettingsFile%, Settings, RESIZE_ALT_VERSION
+
+IniWrite, %ENABLE_SNAP%, %SettingsFile%, Settings, ENABLE_SNAP
+IniWrite, %SNAP_HALF%, %SettingsFile%, Settings, SNAP_HALF
+IniWrite, %SNAP_MAXIMIZE%, %SettingsFile%, Settings, SNAP_MAXIMIZE
+IniWrite, %SNAP_MINIMIZE%, %SettingsFile%, Settings, SNAP_MINIMIZE
+
+IniWrite, %SNAP_THRESHOLD_TOP_BOT%, %SettingsFile%, Settings, SNAP_THRESHOLD_TOP_BOT
+IniWrite, %SNAP_THRESHOLD_LEFT_RIGHT%, %SettingsFile%, Settings, SNAP_THRESHOLD_LEFT_RIGHT
+IniWrite, %SNAP_LEFT_RIGHT_TILES%, %SettingsFile%, Settings, SNAP_LEFT_RIGHT_TILES
+
+IniWrite, %ENABLE_ALWAYS_ON_TOP%, %SettingsFile%, Settings, ENABLE_ALWAYS_ON_TOP
+IniWrite, %ALWAYS_ON_TOP_KEYBIND%, %SettingsFile%, Settings, ALWAYS_ON_TOP_KEYBIND
+
+; hooks cleanup
 if (hook)
     DllCall("UnhookWindowsHookEx", "Ptr", hook), hook := 0
 if (hookProc)
@@ -750,5 +751,6 @@ if (kHook)
     DllCall("UnhookWindowsHookEx", "Ptr", kHook), kHook
 if (kHookProc)
     DllCall("GlobalFree", "Ptr", kHookProc), kHookProc := 0
+
 ExitApp
 return
