@@ -15,25 +15,35 @@ CoordMode, Mouse, Screen
 ; =========================
 ; SETTINGS
 ; =========================
-global ENABLE_DRAG := true  ; Win + Left-click drag to move windows
-global DRAG_ALT_VERSION := false  ; experimental
+global ENABLE_DRAG := 1  ; Win + Left-click drag to move windows
+global DRAG_ALT_VERSION := 0  ; experimental
 
-global ENABLE_CLOSE := true  ; Win + middle-click to close
-global MINIMIZE_INSTEAD := false  ; if true, Win + middle-click will minimize instead of close
+global ENABLE_CLOSE := 1  ; Win + middle-click to close
+global MINIMIZE_INSTEAD := 0  ; if true, Win + middle-click will minimize instead of close
 
-global ENABLE_RESIZE := true  ; Win + right-click drag to resize
-global RESIZE_ALT_VERSION := false  ; experimental
+global ENABLE_RESIZE := 1  ; Win + right-click drag to resize
+global RESIZE_ALT_VERSION := 0  ; experimental
 
-global ENABLE_SNAP := true  ; enable dragging windows to screen edges to snap/resize them
-global SNAP_HALF := true  ; if false, windows will not snap to left/right edges
-global SNAP_MAXIMIZE := true  ; if false, dragging to top edge will not maximize
-global SNAP_MINIMIZE := true  ; if false, dragging to bottom edge will not minimize
+global ENABLE_SNAP := 1  ; enable dragging windows to screen edges to snap/resize them
+global SNAP_HALF := 1  ; if false, windows will not snap to left/right edges
+global SNAP_MAXIMIZE := 1  ; if false, dragging to top edge will not maximize
+global SNAP_MINIMIZE := 1  ; if false, dragging to bottom edge will not minimize
 global SNAP_THRESHOLD_TOP_BOT := 50  ; distance (pixels) from top/bottom edge to trigger maximize/minimize
 global SNAP_THRESHOLD_LEFT_RIGHT := 50  ; distance from left/right edge to trigger snap
-global SNAP_LEFT_RIGHT_TILES := false  ; if true, left/right snap will trigger on the entire screen, effectively tiling the window
+global SNAP_LEFT_RIGHT_TILES := 0  ; if true, left/right snap will trigger on the entire screen, effectively tiling the window
 
-global ENABLE_ALWAYS_ON_TOP := true  ; enable always-on-top functionality (Win + A)
+global ENABLE_ALWAYS_ON_TOP := 1  ; enable always-on-top functionality (Win + A)
 global ALWAYS_ON_TOP_KEYBIND := "A"  ; key to toggle always-on-top (used with Win key, e.g. Win + A)
+
+
+; =========================
+; KEYBINDS
+; =========================
+; always on top keybind
+Hotkey, LWin & %ALWAYS_ON_TOP_KEYBIND%, ToggleAlwaysOnTop
+
+; add more keybinds here if needed
+
 
 
 
@@ -62,8 +72,160 @@ global kHook := DllCall("SetWindowsHookEx"
     , "Ptr", hMod
     , "UInt", 0)
 
-; always on top keybind
+
+
+; TRAY MENU
+Menu, Tray, NoStandard
+Menu, Tray, Add, WinDrag Settings, OpenSettings
+Menu, Tray, Add
+Menu, Tray, Add, Reload Script, Reload
+Menu, Tray, Add, Exit, Cleanup
+Menu, Tray, Default, WinDrag Settings
+Menu, Tray, Click, 1
+
+; SETTINGS GUI
+
+Gui, Font, s9, Segoe UI
+
+Gui, Add, Button, gSaveSettings, Save and Close
+
+; add tabs for different categories of settings
+Gui, Add, Tab2, Buttons vSETTINGS_TAB, Drag|Close|Resize|Snap|Always-on-top
+
+; drag category
+Gui, Tab, Drag
+Gui, Add, CheckBox, vENABLE_DRAG Checked%ENABLE_DRAG%, Enable Win + Left-click drag
+Gui, Add, CheckBox, vDRAG_ALT_VERSION Checked%DRAG_ALT_VERSION%, Use experimental drag method (moves mouse to title bar)
+
+; close category
+Gui, Tab, Close
+Gui, Add, CheckBox, vENABLE_CLOSE Checked%ENABLE_CLOSE%, Enable Win + Middle-click close
+Gui, Add, CheckBox, vMINIMIZE_INSTEAD Checked%MINIMIZE_INSTEAD%, Minimize instead of close
+
+; resize category
+Gui, Tab, Resize
+Gui, Add, CheckBox, vENABLE_RESIZE Checked%ENABLE_RESIZE%, Enable Win + Right-click drag resize
+Gui, Add, CheckBox, vRESIZE_ALT_VERSION Checked%RESIZE_ALT_VERSION%, Use experimental resize method (resizes around center, may have visual artifacts)
+
+; snap category
+Gui, Tab, Snap
+Gui, Add, CheckBox, vENABLE_SNAP gUpdateSnapMode Checked%ENABLE_SNAP%, Enable window snapping to screen edges
+Gui, Add, CheckBox, vSNAP_HALF gUpdateSnapMode Checked%SNAP_HALF%, Enable snapping to left/right edges for half-screen snap
+Gui, Add, CheckBox, vSNAP_MAXIMIZE gUpdateSnapMode Checked%SNAP_MAXIMIZE%, Enable snapping to top edge for maximize
+Gui, Add, CheckBox, vSNAP_MINIMIZE gUpdateSnapMode Checked%SNAP_MINIMIZE%, Enable snapping to bottom edge for minimize
+
+Gui, Add, CheckBox, vSNAP_LEFT_RIGHT_TILES gUpdateSnapMode Checked%SNAP_LEFT_RIGHT_TILES%, Make left/right snap trigger on entire screen (tile)
+
+Gui, Add, Text,,
+Gui, Add, Text,, Left/right snap threshold (px):
+maxH := A_ScreenWidth // 2
+Gui, Add, Slider, w200 Range0-%maxH% AltSubmit gUpdateSnapSlider vSNAP_THRESHOLD_LEFT_RIGHT, %SNAP_THRESHOLD_LEFT_RIGHT%
+Gui, Add, Text, vSnapLRText w60, %SNAP_THRESHOLD_LEFT_RIGHT%px
+
+Gui, Add, Text,,
+Gui, Add, Text,, Top/bottom snap threshold (px)
+maxV := A_ScreenHeight // 4
+Gui, Add, Slider, w200 Range0-%maxV% AltSubmit gUpdateSnapSliderV vSNAP_THRESHOLD_TOP_BOT, %SNAP_THRESHOLD_TOP_BOT%
+Gui, Add, Text, vSnapTBText w250, %SNAP_THRESHOLD_TOP_BOT%px
+Gui, Add, Text,,
+
+; always-on-top category
+Gui, Tab, Always-on-top
+Gui, Add, CheckBox, vENABLE_ALWAYS_ON_TOP Checked%ENABLE_ALWAYS_ON_TOP%, Enable always-on-top toggle (Win + %ALWAYS_ON_TOP_KEYBIND%)
+Gui, Add, Edit, w100 vALWAYS_ON_TOP_KEYBIND, %ALWAYS_ON_TOP_KEYBIND%
+Gui, Add, Text,, (Change the keybind for always-on-top. Default is "A", used with Win key, e.g. Win + A)
+
+
+
+return
+
+UpdateSnapMode:
+Gui, Submit, NoHide
+
+if (!ENABLE_SNAP)
+{
+    GuiControl, Disable, SNAP_THRESHOLD_LEFT_RIGHT
+    GuiControl, Disable, SNAP_THRESHOLD_TOP_BOT
+    GuiControl,, SnapLRText, Disabled
+    GuiControl,, SnapTBText, Disabled
+    return
+}
+
+if (SNAP_MAXIMIZE || SNAP_MINIMIZE)
+{
+    GuiControl, Enable, SNAP_THRESHOLD_TOP_BOT
+    GuiControl,, SnapTBText, %SNAP_THRESHOLD_TOP_BOT%px
+}
+else 
+{
+    GuiControl, Disable, SNAP_THRESHOLD_TOP_BOT
+    GuiControl,, SnapTBText, Disabled
+}
+
+if (!SNAP_HALF)
+{
+    GuiControl, Disable, SNAP_THRESHOLD_LEFT_RIGHT
+    GuiControl,, SnapLRText, Disabled
+    return
+}
+
+if (!SNAP_LEFT_RIGHT_TILES)
+{
+    GuiControl, Enable, SNAP_THRESHOLD_LEFT_RIGHT
+    GuiControl,, SnapLRText, %SNAP_THRESHOLD_LEFT_RIGHT%px
+}
+else
+{
+    GuiControl, Disable, SNAP_THRESHOLD_LEFT_RIGHT
+    val := A_ScreenWidth // 2
+    GuiControl,, SnapLRText, Tiling
+    ;GuiControl,, SNAP_THRESHOLD_LEFT_RIGHT, % A_ScreenWidth//2
+}
+return
+
+UpdateSnapSlider:
+GuiControlGet, val,, SNAP_THRESHOLD_LEFT_RIGHT
+GuiControl,, SnapLRText, %val%px
+return
+
+UpdateSnapSliderV:
+GuiControlGet, val,, SNAP_THRESHOLD_TOP_BOT
+GuiControl,, SnapTBText, %val%px
+return
+
+SaveSettings:
+Gui, Submit, NoHide
+
+; update variables with new settings
+global ENABLE_DRAG := ENABLE_DRAG
+global DRAG_ALT_VERSION := DRAG_ALT_VERSION
+global ENABLE_CLOSE := ENABLE_CLOSE
+global MINIMIZE_INSTEAD := MINIMIZE_INSTEAD
+global ENABLE_RESIZE := ENABLE_RESIZE
+global RESIZE_ALT_VERSION := RESIZE_ALT_VERSION
+global ENABLE_SNAP := ENABLE_SNAP
+global SNAP_HALF := SNAP_HALF
+global SNAP_MAXIMIZE := SNAP_MAXIMIZE
+global SNAP_MINIMIZE := SNAP_MINIMIZE
+global SNAP_THRESHOLD_TOP_BOT := SNAP_THRESHOLD_TOP_BOT
+global SNAP_THRESHOLD_LEFT_RIGHT := SNAP_THRESHOLD_LEFT_RIGHT
+global SNAP_LEFT_RIGHT_TILES := SNAP_LEFT_RIGHT_TILES
+global ENABLE_ALWAYS_ON_TOP := ENABLE_ALWAYS_ON_TOP
+global ALWAYS_ON_TOP_KEYBIND := ALWAYS_ON_TOP_KEYBIND
+
+; update hotkeys
 Hotkey, LWin & %ALWAYS_ON_TOP_KEYBIND%, ToggleAlwaysOnTop
+
+Gui, Hide
+return
+
+
+Reload:
+Reload
+return
+
+OpenSettings:
+Gui, Show,, WinDrag Settings
 return
 
 
@@ -584,5 +746,9 @@ if (hook)
     DllCall("UnhookWindowsHookEx", "Ptr", hook), hook := 0
 if (hookProc)
     DllCall("GlobalFree", "Ptr", hookProc), hookProc := 0
+if (kHook)
+    DllCall("UnhookWindowsHookEx", "Ptr", kHook), kHook
+if (kHookProc)
+    DllCall("GlobalFree", "Ptr", kHookProc), kHookProc := 0
 ExitApp
 return
