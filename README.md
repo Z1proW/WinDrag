@@ -71,6 +71,8 @@ global SNAP_MINIMIZE := true  ; if false, dragging to bottom edge will not minim
 global SNAP_THRESHOLD_TOP_BOT := 50  ; distance (pixels) from top/bottom edge to trigger maximize/minimize
 global SNAP_THRESHOLD_LEFT_RIGHT := 50  ; distance from left/right edge to trigger snap
 global SNAP_LEFT_RIGHT_TILES := false  ; if true, left/right snap will trigger on the entire screen, effectively tiling the window
+
+global ENABLE_ALWAYS_ON_TOP := false  ; enable always-on-top functionality (Win + A)
 ```
 
 ------------------------------------------------------------------------

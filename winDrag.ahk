@@ -32,7 +32,8 @@ global SNAP_THRESHOLD_TOP_BOT := 50  ; distance (pixels) from top/bottom edge to
 global SNAP_THRESHOLD_LEFT_RIGHT := 50  ; distance from left/right edge to trigger snap
 global SNAP_LEFT_RIGHT_TILES := false  ; if true, left/right snap will trigger on the entire screen, effectively tiling the window
 
-global ENABLE_ALWAYS_ON_TOP := false  ; enable always-on-top functionality (Win + Space)
+global ENABLE_ALWAYS_ON_TOP := true  ; enable always-on-top functionality (Win + A)
+
 
 
 
@@ -185,11 +186,29 @@ return
 
 ; =========================
 ; ALWAYS ON TOP KEYBIND (Win + SPACE)
-; moves mouse on the title bar
+; toggles always-on-top for the active window
 ; =========================
-~#SPACE::
-if (ENABLE_ALWAYS_ON_TOP)
-    Winset, Alwaysontop, , A
+LWin & A::
+if (!ENABLE_ALWAYS_ON_TOP)
+    return
+
+WinGet, activeWindow, ID, A
+
+; ignore invalid windows
+if (!IsRealWindow(activeWindow))
+    return
+
+; Exclude Start menu and taskbar
+WinGetClass, cls, ahk_id %activeWindow%
+WinGet, exe, ProcessName, ahk_id %activeWindow%
+if (exe = "StartMenuExperienceHost.exe"
+|| exe = "SearchHost.exe"
+|| cls = "Windows.UI.Core.CoreWindow"
+|| cls = "Shell_TrayWnd"
+|| cls = "Shell_SecondaryTrayWnd")
+    return
+
+Winset, Alwaysontop, , A
 return
 
 
