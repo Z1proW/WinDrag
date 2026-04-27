@@ -32,6 +32,8 @@ global SNAP_THRESHOLD_TOP_BOT := 50  ; distance (pixels) from top/bottom edge to
 global SNAP_THRESHOLD_LEFT_RIGHT := 50  ; distance from left/right edge to trigger snap
 global SNAP_LEFT_RIGHT_TILES := false  ; if true, left/right snap will trigger on the entire screen, effectively tiling the window
 
+global ENABLE_ALWAYS_ON_TOP := false  ; enable always-on-top functionality (Win + Space)
+
 
 
 ; =========================
@@ -177,6 +179,17 @@ if (!ENABLE_DRAG)
 if (!DRAG_ALT_VERSION)
     return
 Send {LButton up}
+return
+
+
+
+; =========================
+; ALWAYS ON TOP KEYBIND (Win + SPACE)
+; moves mouse on the title bar
+; =========================
+~#SPACE::
+if (ENABLE_ALWAYS_ON_TOP)
+    Winset, Alwaysontop, , A
 return
 
 
