@@ -12,10 +12,10 @@ SetWinDelay, -1
 CoordMode, Mouse, Screen
 
 
-SettingsFile := A_ScriptDir "\settings.ini"
+global SettingsFile := A_ScriptDir "\settings.ini"
 
 ; =========================
-; SETTINGS
+; DEFAULT SETTINGS
 ; =========================
 global ENABLE_DRAG := 1  ; Win + Left-click drag to move windows
 global DRAG_ALT_VERSION := 0  ; experimental
@@ -39,10 +39,10 @@ global ALWAYS_ON_TOP_KEYBIND := "A"  ; key to toggle always-on-top (used with Wi
 
 
 ; =========================
-; DEFAULT KEYBINDS
+; LOAD DEFAULT KEYBINDS
 ; =========================
 ; always on top keybind
-Hotkey, LWin & %ALWAYS_ON_TOP_KEYBIND%, ToggleAlwaysOnTop
+Hotkey, LWin & %ALWAYS_ON_TOP_KEYBIND%, ToggleAlwaysOnTop, On
 
 
 
@@ -72,38 +72,14 @@ global kHook := DllCall("SetWindowsHookEx"
     , "Ptr", hMod
     , "UInt", 0)
 
-
-; load settings from file
-Gosub, LoadSettings
-LoadSettings:
-IniRead, ENABLE_DRAG, %SettingsFile%, Settings, ENABLE_DRAG, 1
-IniRead, DRAG_ALT_VERSION, %SettingsFile%, Settings, DRAG_ALT_VERSION, 0
-
-IniRead, ENABLE_CLOSE, %SettingsFile%, Settings, ENABLE_CLOSE, 1
-IniRead, MINIMIZE_INSTEAD, %SettingsFile%, Settings, MINIMIZE_INSTEAD, 0
-
-IniRead, ENABLE_RESIZE, %SettingsFile%, Settings, ENABLE_RESIZE, 1
-IniRead, RESIZE_ALT_VERSION, %SettingsFile%, Settings, RESIZE_ALT_VERSION, 0
-
-IniRead, ENABLE_SNAP, %SettingsFile%, Settings, ENABLE_SNAP, 1
-IniRead, SNAP_HALF, %SettingsFile%, Settings, SNAP_HALF, 1
-IniRead, SNAP_MAXIMIZE, %SettingsFile%, Settings, SNAP_MAXIMIZE, 1
-IniRead, SNAP_MINIMIZE, %SettingsFile%, Settings, SNAP_MINIMIZE, 1
-
-IniRead, SNAP_THRESHOLD_TOP_BOT, %SettingsFile%, Settings, SNAP_THRESHOLD_TOP_BOT, 50
-IniRead, SNAP_THRESHOLD_LEFT_RIGHT, %SettingsFile%, Settings, SNAP_THRESHOLD_LEFT_RIGHT, 50
-IniRead, SNAP_LEFT_RIGHT_TILES, %SettingsFile%, Settings, SNAP_LEFT_RIGHT_TILES, 0
-
-IniRead, ENABLE_ALWAYS_ON_TOP, %SettingsFile%, Settings, ENABLE_ALWAYS_ON_TOP, 1
-IniRead, ALWAYS_ON_TOP_KEYBIND, %SettingsFile%, Settings, ALWAYS_ON_TOP_KEYBIND, A
-
-return
-
-
+; load settings from file if it exists, otherwise defaults will be used and saved on exit
+if FileExist(SettingsFile)
+    Gosub, LoadSettingsFromDisk
 
 ; TRAY MENU
 Menu, Tray, NoStandard
 Menu, Tray, Add, WinDrag Settings, OpenSettings
+Menu, Tray, Add, Open Script Directory, OpenScriptDir
 Menu, Tray, Add
 Menu, Tray, Add, Reload Script, Reload
 Menu, Tray, Add, Exit, Cleanup
@@ -114,29 +90,31 @@ Menu, Tray, Click, 1
 
 Gui, Font, s9, Segoe UI
 
-Gui, Add, Button, gSaveSettings, Save and Close
+Gui, Add, Button, gSaveSettings, Save
+Gui, Add, Button, x+10 vBtnRestoreDefaults gRestoreDefaults, Restore Defaults
+Gui, Add, Button, x+10 vBtnRestoreBackup gRestoreBackup, Restore Backup
 
 ; add tabs for different categories of settings
-Gui, Add, Tab2, Buttons vSETTINGS_TAB, Drag|Close|Resize|Snap|Always-on-top
+Gui, Add, Tab2, Buttons x13 y+10 vSETTINGS_TAB, Drag|Close|Resize|Snap|Always-on-top
 
 ; drag category
 Gui, Tab, Drag
-Gui, Add, CheckBox, vENABLE_DRAG Checked%ENABLE_DRAG%, Enable Win + Left-click drag
+Gui, Add, CheckBox, y+10 vENABLE_DRAG Checked%ENABLE_DRAG%, Enable Win + Left-click drag
 Gui, Add, CheckBox, vDRAG_ALT_VERSION Checked%DRAG_ALT_VERSION%, Use experimental drag method (moves mouse to title bar)
 
 ; close category
 Gui, Tab, Close
-Gui, Add, CheckBox, vENABLE_CLOSE Checked%ENABLE_CLOSE%, Enable Win + Middle-click close
+Gui, Add, CheckBox, y+10 vENABLE_CLOSE Checked%ENABLE_CLOSE%, Enable Win + Middle-click close
 Gui, Add, CheckBox, vMINIMIZE_INSTEAD Checked%MINIMIZE_INSTEAD%, Minimize instead of close
 
 ; resize category
 Gui, Tab, Resize
-Gui, Add, CheckBox, vENABLE_RESIZE Checked%ENABLE_RESIZE%, Enable Win + Right-click drag resize
+Gui, Add, CheckBox, y+10 vENABLE_RESIZE Checked%ENABLE_RESIZE%, Enable Win + Right-click drag resize
 Gui, Add, CheckBox, vRESIZE_ALT_VERSION Checked%RESIZE_ALT_VERSION%, Use experimental resize method (resizes around center, may have visual artifacts)
 
 ; snap category
 Gui, Tab, Snap
-Gui, Add, CheckBox, vENABLE_SNAP gUpdateSnapMode Checked%ENABLE_SNAP%, Enable window snapping to screen edges
+Gui, Add, CheckBox, y+10 vENABLE_SNAP gUpdateSnapMode Checked%ENABLE_SNAP%, Enable window snapping to screen edges
 Gui, Add, CheckBox, vSNAP_HALF gUpdateSnapMode Checked%SNAP_HALF%, Enable snapping to left/right edges for half-screen snap
 Gui, Add, CheckBox, vSNAP_MAXIMIZE gUpdateSnapMode Checked%SNAP_MAXIMIZE%, Enable snapping to top edge for maximize
 Gui, Add, CheckBox, vSNAP_MINIMIZE gUpdateSnapMode Checked%SNAP_MINIMIZE%, Enable snapping to bottom edge for minimize
@@ -158,13 +136,57 @@ Gui, Add, Text,,
 
 ; always-on-top category
 Gui, Tab, Always-on-top
-Gui, Add, CheckBox, vENABLE_ALWAYS_ON_TOP Checked%ENABLE_ALWAYS_ON_TOP%, Enable always-on-top toggle (Win + %ALWAYS_ON_TOP_KEYBIND%)
+Gui, Add, CheckBox, y+10 vENABLE_ALWAYS_ON_TOP Checked%ENABLE_ALWAYS_ON_TOP%, Enable always-on-top toggle (Win + %ALWAYS_ON_TOP_KEYBIND%)
 Gui, Add, Edit, w100 vALWAYS_ON_TOP_KEYBIND, %ALWAYS_ON_TOP_KEYBIND%
 Gui, Add, Text,, (Change the keybind for always-on-top. Default is "A", used with Win key, e.g. Win + A)
 
 
+return
+
+LoadSettingsFromDisk:
+Hotkey, LWin & %ALWAYS_ON_TOP_KEYBIND%, ToggleAlwaysOnTop, Off  ; unregister old keybind
+
+IniRead, ENABLE_DRAG, %SettingsFile%, Settings, ENABLE_DRAG, 1
+IniRead, DRAG_ALT_VERSION, %SettingsFile%, Settings, DRAG_ALT_VERSION, 0
+
+IniRead, ENABLE_CLOSE, %SettingsFile%, Settings, ENABLE_CLOSE, 1
+IniRead, MINIMIZE_INSTEAD, %SettingsFile%, Settings, MINIMIZE_INSTEAD, 0
+
+IniRead, ENABLE_RESIZE, %SettingsFile%, Settings, ENABLE_RESIZE, 1
+IniRead, RESIZE_ALT_VERSION, %SettingsFile%, Settings, RESIZE_ALT_VERSION, 0
+
+IniRead, ENABLE_SNAP, %SettingsFile%, Settings, ENABLE_SNAP, 1
+IniRead, SNAP_HALF, %SettingsFile%, Settings, SNAP_HALF, 1
+IniRead, SNAP_MAXIMIZE, %SettingsFile%, Settings, SNAP_MAXIMIZE, 1
+IniRead, SNAP_MINIMIZE, %SettingsFile%, Settings, SNAP_MINIMIZE, 1
+
+IniRead, SNAP_THRESHOLD_TOP_BOT, %SettingsFile%, Settings, SNAP_THRESHOLD_TOP_BOT, 50
+IniRead, SNAP_THRESHOLD_LEFT_RIGHT, %SettingsFile%, Settings, SNAP_THRESHOLD_LEFT_RIGHT, 50
+IniRead, SNAP_LEFT_RIGHT_TILES, %SettingsFile%, Settings, SNAP_LEFT_RIGHT_TILES, 0
+
+IniRead, ENABLE_ALWAYS_ON_TOP, %SettingsFile%, Settings, ENABLE_ALWAYS_ON_TOP, 1
+IniRead, ALWAYS_ON_TOP_KEYBIND, %SettingsFile%, Settings, ALWAYS_ON_TOP_KEYBIND, A
+
+; load keybinds based on settings
+Hotkey, LWin & %ALWAYS_ON_TOP_KEYBIND%, ToggleAlwaysOnTop, On
 
 return
+
+
+UpdateSettingsButtons:
+; Restore Defaults button enabled only if settings.ini exists
+if FileExist(SettingsFile)
+    GuiControl, Enable, BtnRestoreDefaults
+else
+    GuiControl, Disable, BtnRestoreDefaults
+
+; Restore Backup button enabled only if .bak exists
+if FileExist(SettingsFile ".bak")
+    GuiControl, Enable, BtnRestoreBackup
+else
+    GuiControl, Disable, BtnRestoreBackup
+return
+
 
 UpdateSnapMode:
 Gui, Submit, NoHide
@@ -221,6 +243,8 @@ GuiControl,, SnapTBText, %val%px
 return
 
 SaveSettings:
+Hotkey, LWin & %ALWAYS_ON_TOP_KEYBIND%, ToggleAlwaysOnTop, Off  ; unregister old keybind
+
 Gui, Submit, NoHide
 
 ; update variables with new settings
@@ -243,16 +267,69 @@ global ALWAYS_ON_TOP_KEYBIND := ALWAYS_ON_TOP_KEYBIND
 ; update hotkeys
 Hotkey, LWin & %ALWAYS_ON_TOP_KEYBIND%, ToggleAlwaysOnTop
 
-Gui, Hide
+Gosub, SaveSettingsOnDisk
+Gosub, UpdateSettingsButtons
+
+return
+
+GuiClose(GuiHwnd)
+{
+    MsgBox, 4,, Do you want to exit? (discards unsaved changes)
+    IfMsgBox, No
+        return true
+    Reload
+}
+
+
+RestoreDefaults:
+MsgBox, 4,, Reset all settings to defaults? (This will overwrite current settings and create a backup)
+IfMsgBox, No
+    return
+
+if FileExist(SettingsFile)
+{
+    FileMove, %SettingsFile%, %SettingsFile%.bak, 1  ; overwrite existing backup
+}
+
+Gosub, UpdateSettingsButtons
+Reload
+
+return
+
+
+RestoreBackup:
+MsgBox, 4,, Restore settings from backup? (This will overwrite current settings and create a backup)
+IfMsgBox, No
+    return
+
+if !FileExist(SettingsFile ".bak")
+{
+    MsgBox, Backup file not found!
+    return
+}
+FileMove, %SettingsFile%, %SettingsFile%.bak2, 1  ; create temp backup of current settings
+FileMove, %SettingsFile%.bak, %SettingsFile%, 1  ; restore backup
+FileMove, %SettingsFile%.bak2, %SettingsFile%.bak, 1  ; move temp backup to .bak
+
+Gosub, UpdateSettingsButtons
+Reload
+
 return
 
 
 Reload:
+Gosub, SaveSettingsOnDisk
 Reload
 return
 
 OpenSettings:
 Gui, Show,, WinDrag Settings
+Gosub, UpdateSettingsButtons
+return
+
+
+OpenScriptDir:
+Run, %A_ScriptDir%
 return
 
 
@@ -284,7 +361,7 @@ return
 ; RESIZE WINDOW (Win + Right Mouse)
 ; =========================
 ~LWin & RButton::
-if (!ENABLE_CLOSE)
+if (!ENABLE_RESIZE)
     return
 if (dragging)
     return
@@ -715,10 +792,13 @@ IsRealWindow(hwnd)
     return true
 }
 
-; =========================
-; SAVE SETTINGS AND EXIT
-; =========================
-Cleanup:
+SaveSettingsOnDisk:
+
+; create backup of current settings if they exist
+if FileExist(SettingsFile)
+{
+    FileMove, %SettingsFile%, %SettingsFile%.bak, 1  ; overwrite existing backup
+}
 
 ; write settings
 IniWrite, %ENABLE_DRAG%, %SettingsFile%, Settings, ENABLE_DRAG
@@ -741,6 +821,13 @@ IniWrite, %SNAP_LEFT_RIGHT_TILES%, %SettingsFile%, Settings, SNAP_LEFT_RIGHT_TIL
 
 IniWrite, %ENABLE_ALWAYS_ON_TOP%, %SettingsFile%, Settings, ENABLE_ALWAYS_ON_TOP
 IniWrite, %ALWAYS_ON_TOP_KEYBIND%, %SettingsFile%, Settings, ALWAYS_ON_TOP_KEYBIND
+return
+
+; =========================
+; SAVE SETTINGS AND EXIT
+; =========================
+Cleanup:
+Gosub, SaveSettingsOnDisk
 
 ; hooks cleanup
 if (hook)
