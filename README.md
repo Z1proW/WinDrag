@@ -73,6 +73,7 @@ global SNAP_THRESHOLD_LEFT_RIGHT := 50  ; distance from left/right edge to trigg
 global SNAP_LEFT_RIGHT_TILES := false  ; if true, left/right snap will trigger on the entire screen, effectively tiling the window
 
 global ENABLE_ALWAYS_ON_TOP := false  ; enable always-on-top functionality (Win + A)
+global ALWAYS_ON_TOP_KEYBIND := "A"  ; key to toggle always-on-top (used with Win key, e.g. Win + A)
 ```
 
 ------------------------------------------------------------------------
