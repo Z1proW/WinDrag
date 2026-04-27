@@ -52,29 +52,7 @@ https://github.com/user-attachments/assets/7ecf3290-65a8-4647-8a65-e2ec6ce8db84
 ------------------------------------------------------------------------
 ## ⚙️ Configuration
 
-You can tweak behavior in the settings section:
-
-``` ahk
-global ENABLE_DRAG := true  ; Win + Left-click drag to move windows
-global DRAG_ALT_VERSION := false  ; experimental
-
-global ENABLE_CLOSE := true  ; Win + middle-click to close
-global MINIMIZE_INSTEAD := false  ; if true, Win + middle-click will minimize instead of close
-
-global ENABLE_RESIZE := true  ; Win + right-click drag to resize
-global RESIZE_ALT_VERSION := false  ; experimental
-
-global ENABLE_SNAP := true  ; enable dragging windows to screen edges to snap/resize them
-global SNAP_HALF := true  ; if false, windows will not snap to left/right edges
-global SNAP_MAXIMIZE := true  ; if false, dragging to top edge will not maximize
-global SNAP_MINIMIZE := true  ; if false, dragging to bottom edge will not minimize
-global SNAP_THRESHOLD_TOP_BOT := 50  ; distance (pixels) from top/bottom edge to trigger maximize/minimize
-global SNAP_THRESHOLD_LEFT_RIGHT := 50  ; distance from left/right edge to trigger snap
-global SNAP_LEFT_RIGHT_TILES := false  ; if true, left/right snap will trigger on the entire screen, effectively tiling the window
-
-global ENABLE_ALWAYS_ON_TOP := false  ; enable always-on-top functionality (Win + A)
-global ALWAYS_ON_TOP_KEYBIND := "A"  ; key to toggle always-on-top (used with Win key, e.g. Win + A)
-```
+You can tweak behavior by using the GUI Settings in the tray icon.
 
 ------------------------------------------------------------------------
 
@@ -91,17 +69,17 @@ global ALWAYS_ON_TOP_KEYBIND := "A"  ; key to toggle always-on-top (used with Wi
 
 You have two options:
 
-* **Script version:**
-  Download `winDrag.ahk` and run it with [AutoHotkey v1.1+](https://www.autohotkey.com/)
-  Recommended for advanced customization.
-
 * **Precompiled version:**
   Download and run `winDrag.exe`, no installation required.
   [Download latest release](https://github.com/Z1proW/WinDrag/releases)
 
+* **Script version:**
+  Download `winDrag.ahk` and run it with [AutoHotkey v1.1+](https://www.autohotkey.com/)
+  Recommended for advanced users who want to edit the script.
+
 ---
 
-### 🚀 Start on boot (AutoHotkey version only)
+### 🚀 Start on boot
 
 To launch the script automatically at startup:
 
@@ -111,7 +89,8 @@ To launch the script automatically at startup:
    ```
    shell:startup
    ```
-3. Place a shortcut of `winDrag.ahk` in that folder
+3. Place a shortcut of `winDrag.ahk` or `winDrag.exe` in that folder
+
 4. Running the script on Administrator windows:
 
     If you want the script to interact with applications running as Administrator, you must run the script itself with elevated privileges.
@@ -122,4 +101,3 @@ To launch the script automatically at startup:
     * Select **Properties**
     * Go to **Advanced…**
     * Check **Run as administrator**
-
