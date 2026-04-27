@@ -24,6 +24,7 @@ global ENABLE_CLOSE := 1  ; Win + middle-click to close
 global MINIMIZE_INSTEAD := 0  ; if true, Win + middle-click will minimize instead of close
 
 global ENABLE_RESIZE := 1  ; Win + right-click drag to resize
+global RESIZE_ANY_CORNER := 0  ; if true, Win + right-click drag will resize from the corner closest to the mouse, otherwise it always resizes from bottom-right
 global RESIZE_ALT_VERSION := 0  ; experimental
 
 global ENABLE_SNAP := 1  ; enable dragging windows to screen edges to snap/resize them
@@ -109,7 +110,8 @@ Gui, Add, CheckBox, vMINIMIZE_INSTEAD Checked%MINIMIZE_INSTEAD%, Minimize instea
 
 ; resize category
 Gui, Tab, Resize
-Gui, Add, CheckBox, y+10 vENABLE_RESIZE Checked%ENABLE_RESIZE%, Enable Win + Right-click drag resize
+Gui, Add, CheckBox, y+10 vENABLE_RESIZE Checked%ENABLE_RESIZE%, Enable Win + Right-click drag resize  ;; TODO make a dropdown menu for different resize methods
+Gui, Add, CheckBox, vRESIZE_ANY_CORNER Checked%RESIZE_ANY_CORNER%, Resize from any corner (instead of just bottom-right)
 Gui, Add, CheckBox, vRESIZE_ALT_VERSION Checked%RESIZE_ALT_VERSION%, Use experimental resize method (resizes around center, may have visual artifacts)
 
 ; snap category
@@ -153,6 +155,7 @@ IniRead, ENABLE_CLOSE, %SettingsFile%, Settings, ENABLE_CLOSE, 1
 IniRead, MINIMIZE_INSTEAD, %SettingsFile%, Settings, MINIMIZE_INSTEAD, 0
 
 IniRead, ENABLE_RESIZE, %SettingsFile%, Settings, ENABLE_RESIZE, 1
+IniRead, RESIZE_ANY_CORNER, %SettingsFile%, Settings, RESIZE_ANY_CORNER, 0
 IniRead, RESIZE_ALT_VERSION, %SettingsFile%, Settings, RESIZE_ALT_VERSION, 0
 
 IniRead, ENABLE_SNAP, %SettingsFile%, Settings, ENABLE_SNAP, 1
@@ -253,6 +256,7 @@ global DRAG_ALT_VERSION := DRAG_ALT_VERSION
 global ENABLE_CLOSE := ENABLE_CLOSE
 global MINIMIZE_INSTEAD := MINIMIZE_INSTEAD
 global ENABLE_RESIZE := ENABLE_RESIZE
+global RESIZE_ANY_CORNER := RESIZE_ANY_CORNER
 global RESIZE_ALT_VERSION := RESIZE_ALT_VERSION
 global ENABLE_SNAP := ENABLE_SNAP
 global SNAP_HALF := SNAP_HALF
@@ -289,6 +293,7 @@ ApplySettingsToGui()
     GuiControl,, MINIMIZE_INSTEAD, %MINIMIZE_INSTEAD%
 
     GuiControl,, ENABLE_RESIZE, %ENABLE_RESIZE%
+    GuiControl,, RESIZE_ANY_CORNER, %RESIZE_ANY_CORNER%
     GuiControl,, RESIZE_ALT_VERSION, %RESIZE_ALT_VERSION%
 
     GuiControl,, ENABLE_SNAP, %ENABLE_SNAP%
@@ -392,7 +397,7 @@ if (!ENABLE_RESIZE)
 if (dragging)
     return
 
-MouseGetPos,,, winId
+MouseGetPos, curX, curY, winId
 ; ignore invalid windows
 if (!IsRealWindow(winId))
     return
@@ -401,10 +406,42 @@ if (!IsRealWindow(winId))
 WinGet, wasMax, MinMax, ahk_id %winId%
 if (wasMax = 1)
     return
-                        
+
+ht := 17  ; default to bottom-right resize
+
+if (RESIZE_ANY_CORNER)
+{
+    ; this block is from u/junvar0 on reddit
+    WinGetPos, winX, winY, winW, winH, ahk_id %winId%
+    relX := (curX - winX) / winW - .5
+    relY := (curY - winY) / winH - .5
+    resizeLeft := 2 * relX + Abs(relY) < 0
+    resizeTop := 2 * relY + Abs(relX) < 0
+    resizeRight := 2 * relX - Abs(relY) > 0
+    resizeBottom := 2 * relY - Abs(relX) > 0
+    ;
+
+    if (resizeTop && resizeLeft)
+        ht := 13  ; HTTOPLEFT
+    else if (resizeTop && resizeRight)
+        ht := 14  ; HTTOPRIGHT
+    else if (resizeBottom && resizeLeft)
+        ht := 16  ; HTBOTTOMLEFT
+    else if (resizeBottom && resizeRight)
+        ht := 17  ; HTBOTTOMRIGHT
+    else if (resizeLeft)
+        ht := 10  ; HTLEFT
+    else if (resizeRight)
+        ht := 11  ; HTRIGHT
+    else if (resizeTop)
+        ht := 12  ; HTTOP
+    else if (resizeBottom)
+        ht := 15  ; HTBOTTOM
+}
+
 WinActivate, ahk_id %winId%
 DllCall("ReleaseCapture")
-PostMessage, 0xA1, 17,,, ahk_id %winId% ; 17 = HTBOTTOMRIGHT
+PostMessage, 0xA1, ht,,, ahk_id %winId% ; 17 = HTBOTTOMRIGHT
 resizing := true
 return
 
@@ -834,6 +871,7 @@ IniWrite, %ENABLE_CLOSE%, %SettingsFile%, Settings, ENABLE_CLOSE
 IniWrite, %MINIMIZE_INSTEAD%, %SettingsFile%, Settings, MINIMIZE_INSTEAD
 
 IniWrite, %ENABLE_RESIZE%, %SettingsFile%, Settings, ENABLE_RESIZE
+IniWrite, %RESIZE_ANY_CORNER%, %SettingsFile%, Settings, RESIZE_ANY_CORNER
 IniWrite, %RESIZE_ALT_VERSION%, %SettingsFile%, Settings, RESIZE_ALT_VERSION
 
 IniWrite, %ENABLE_SNAP%, %SettingsFile%, Settings, ENABLE_SNAP
