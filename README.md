@@ -91,13 +91,4 @@ To launch the script automatically at startup:
    ```
 3. Place a shortcut of `winDrag.ahk` or `winDrag.exe` in that folder
 
-4. Running the script on Administrator windows:
-
-    If you want the script to interact with applications running as Administrator, you must run the script itself with elevated privileges.
-
-    To do this:
-
-    * Right-click the script file
-    * Select **Properties**
-    * Go to **Advanced…**
-    * Check **Run as administrator**
+If you want the script to interact with applications running as Administrator, you might need to run the script with elevated privileges.
