@@ -570,6 +570,28 @@ MouseHook(nCode, wParam, lParam)
                     , "Int", 0 , "Int", 0
                     , "UInt", 0x0001 | 0x0004) ; SWP_NOSIZE | SWP_NOZORDER
             }
+            else
+            {
+                ; handle snapped windows by restoring them and then putting them back to their original size
+                ; this fixes a weird behavior where restoring a snapped window has a different size than original
+
+                ; restore snapped window, without changing its size
+                WinGetPos, wx, wy, ww, wh, ahk_id %winId%
+                WinRestore, ahk_id %winId%
+                WinGetPos,,, newWW, newWH, ahk_id %winId%
+                if (newWW != ww || newWH != wh)
+                {
+                    ; window was snapped, restore original size and position
+                    DllCall("SetWindowPos"
+                        , "Ptr", winId
+                        , "Ptr", 0
+                        , "Int", wx
+                        , "Int", wy
+                        , "Int", ww
+                        , "Int", wh
+                        , "UInt", 0x0004) ; SWP_NOZORDER
+                }
+            }
 
             MouseGetPos, startMouseX, startMouseY
             WinGetPos, startWinX, startWinY,,, ahk_id %winId%
