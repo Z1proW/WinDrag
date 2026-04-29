@@ -759,8 +759,10 @@ SnapWindow(winId, curX, curY)
 
                 ; Now do real Windows snap
                 WinActivate, ahk_id %winId%
+                wasLWinPressed := GetKeyState("LWin", "P")
                 Send, #{Left}
-                Send, {LWin down}
+                if (wasLWinPressed)
+                    Send, {LWin down}
                 return 1
             }
 
@@ -779,8 +781,10 @@ SnapWindow(winId, curX, curY)
 
                 ; Activate + native snap
                 WinActivate, ahk_id %winId%
+                wasLWinPressed := GetKeyState("LWin", "P")
                 Send, #{Right}
-                Send, {LWin down}
+                if (wasLWinPressed)
+                    Send, {LWin down}
                 return 1
             }
         }
