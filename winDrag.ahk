@@ -739,13 +739,15 @@ SnapWindow(winId, curX, curY)
             width := monRight - monLeft
             height := monBottom - monTop
 
+            snap_threashold_left_right := SNAP_THRESHOLD_LEFT_RIGHT
+
             if (SNAP_LEFT_RIGHT_TILES)
             {
-                SNAP_THRESHOLD_LEFT_RIGHT := width // 2
+                snap_threashold_left_right := width // 2
             }
 
             ; LEFT
-            if (curX <= monLeft + SNAP_THRESHOLD_LEFT_RIGHT)
+            if (curX <= monLeft + snap_threashold_left_right)
             {
                 ; Move window fully into this monitor first
                 DllCall("SetWindowPos"
@@ -767,7 +769,7 @@ SnapWindow(winId, curX, curY)
             }
 
             ; RIGHT
-            if (curX >= monRight - SNAP_THRESHOLD_LEFT_RIGHT)
+            if (curX >= monRight - snap_threashold_left_right)
             {
                 ; Force window onto this monitor first
                 DllCall("SetWindowPos"
