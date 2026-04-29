@@ -895,7 +895,7 @@ IsRealWindow(hwnd)
     WinGet, exe, ProcessName, ahk_id %hwnd%
     if (exe = "StartMenuExperienceHost.exe"
     || exe = "SearchHost.exe")
-        return
+        return false
 
     return true
 }
