@@ -54,7 +54,6 @@ Hotkey, LWin & %ALWAYS_ON_TOP_KEYBIND%, ToggleAlwaysOnTop, On
 ; =========================
 global dragging := false
 global resizing := false
-global winDown := false
 global winId := 0
 
 ; install mouse hook
@@ -390,20 +389,18 @@ return
 
 
 
-~LWin & RButton::
-Gosub, StartResize
-return
-
-~LWin::
-if (GetKeyState("RButton", "P"))
-{
-    Gosub, StartResize
-}
-return
 
 ; =========================
 ; RESIZE WINDOW (Win + Right Mouse)
 ; =========================
+~LWin & RButton::
+Gosub, StartResize
+return
+
+~LWin & RButton up::
+Gosub, EndResize
+return
+
 StartResize:
 if (!ENABLE_RESIZE || dragging || RESIZE_ALT_VERSION)
     return
@@ -458,7 +455,7 @@ PostMessage, 0xA1, ht,,, ahk_id %winId% ; 17 = HTBOTTOMRIGHT
 resizing := true
 return
 
-~LWin & RButton up::
+EndResize:
 if (!ENABLE_RESIZE || RESIZE_ALT_VERSION)
     return
 
@@ -475,8 +472,6 @@ resizing := false
 ; }
 
 PostMessage, 0x202, 0,,, ahk_id %winId% ; Exit resize
-winId := 0
-winDown := false
 return
 
 
@@ -547,15 +542,12 @@ MouseHook(nCode, wParam, lParam)
     global startMouseX, startMouseY
     global startWinX, startWinY
     global startWinW, startWinH
-    global winDown
 
     Critical
 
-    if (!winDown && !GetKeyState("LWin", "P"))
+    if (!dragging && !resizing && !GetKeyState("LWin", "P"))
     {
         winId := 0
-        dragging := false
-        resizing := false
         return CallNextHook(hook, nCode, wParam, lParam)
     }
     ; now LWin is pressed (or a drag/resize is still active)
@@ -650,8 +642,6 @@ MouseHook(nCode, wParam, lParam)
                 SnapWindow(winId, curX, curY)
             }
 
-            winId := 0
-            winDown := false
             CloseStartMenu()
 
             return 1 ; don't pass click event to OS
@@ -702,8 +692,6 @@ MouseHook(nCode, wParam, lParam)
         else if (wParam = 0x205 && resizing) ; WM_RBUTTONUP
         {
             resizing := false
-            winId := 0
-            winDown := false
             CloseStartMenu()
             return 1 ; don't pass click event to OS
         }
@@ -821,8 +809,8 @@ CallNextHook(hHook, nCode, wParam, lParam)
 
 KeyboardHook(nCode, wParam, lParam)
 {
-    global winDown, kHook
-    global dragging, resizing
+    global kHook
+    global dragging, resizing, winId
 
     if (nCode < 0)
         return CallNextHook(kHook, nCode, wParam, lParam)
@@ -839,16 +827,15 @@ KeyboardHook(nCode, wParam, lParam)
             if (GetKeyState("RButton", "P"))
                 DllCall("mouse_event", "UInt", 0x0008, "UInt", 0, "UInt", 0) ; RIGHT UP
 
-            winDown := true
             winId := 0
             dragging := false
             resizing := false
         }
         else if (wParam = 0x101) ; WM_KEYUP
         {
+            ;MsgBox, dragging: %dragging% resizing: %resizing%
             if (dragging)
                 CloseStartMenu()
-            ; we don't set winDown to false here to be able to drag/resize until releasing mouse button
         }
     }
 
