@@ -827,14 +827,9 @@ KeyboardHook(nCode, wParam, lParam)
         }
         else if (wParam = 0x101) ; WM_KEYUP
         {
-            if (resizing)
-                PostMessage, 0x202, 0,,, ahk_id %winId% ; Exit resize
-            winId := 0
             if (dragging)
                 CloseStartMenu()
-            dragging := false
-            resizing := false
-            ; we don't set winDown to false here to be able to drag/resize until releasing mouse button
+            ; we don't set winDown, etc, to false here to be able to drag/resize until releasing mouse button
         }
     }
 
