@@ -55,6 +55,7 @@ Hotkey, LWin & %ALWAYS_ON_TOP_KEYBIND%, ToggleAlwaysOnTop, On
 global dragging := false
 global resizing := false
 global winId := 0
+global winX := 0, winY := 0, winW := -1, winH := -1
 
 ; install mouse hook
 global hMod := DllCall("GetModuleHandle", "Ptr", 0, "Ptr")
@@ -401,6 +402,7 @@ return
 Gosub, EndResize
 return
 
+
 StartResize:
 if (!ENABLE_RESIZE || dragging || RESIZE_ALT_VERSION)
     return
@@ -416,13 +418,12 @@ if (wasMax = 1)
     return
 
 ht := 17  ; default to bottom-right resize
-; global winX, winY
-; WinGetPos, winX, winY, winW, winH, ahk_id %winId%
+WinGetPos, winX, winY, winW, winH, ahk_id %winId%
 
 if (RESIZE_ANY_CORNER)
 {
     ; this block is from u/junvar0 on reddit
-    WinGetPos, winX, winY, winW, winH, ahk_id %winId%
+    ; WinGetPos, winX, winY, winW, winH, ahk_id %winId%
     relX := (curX - winX) / winW - .5
     relY := (curY - winY) / winH - .5
     resizeLeft := 2 * relX + Abs(relY) < 0
@@ -455,21 +456,34 @@ PostMessage, 0xA1, ht,,, ahk_id %winId% ; 17 = HTBOTTOMRIGHT
 resizing := true
 return
 
+
+MoveResize:
+WinGetPos, wx, wy,,, ahk_id %winId%
+if (winId != 0 && (winX != wx || winY != wy))
+{
+    PostMessage, 0x202, 0,,, ahk_id %winId% ; Exit resize
+    ; set position to winX, winY, winW, winH
+    DllCall("SetWindowPos"
+        , "ptr", winId
+        , "ptr", 0
+        , "int", winX
+        , "int", winY
+        , "int", winW
+        , "int", winH
+        , "uint", 0x0004) ; SWP_NOZORDER
+    ; start resize again
+    WinActivate, ahk_id %winId%
+    DllCall("ReleaseCapture")
+    PostMessage, 0xA1, ht,,, ahk_id %winId% ; 17 = HTBOTTOMRIGHT
+}
+return
+
+
 EndResize:
 if (!ENABLE_RESIZE || RESIZE_ALT_VERSION)
     return
 
 resizing := false
-
-; if (dragging)
-;     return
-
-; global winX, winY
-; WinGetPos, wx, wy,,, ahk_id %winId%
-; if (winId != 0 && (winX != wx || winY != wy))
-; {
-;     MsgBox, winX: %winX% winY: %winY% wx: %wx% wy: %wy%
-; }
 
 PostMessage, 0x202, 0,,, ahk_id %winId% ; Exit resize
 return
@@ -645,6 +659,17 @@ MouseHook(nCode, wParam, lParam)
             CloseStartMenu()
 
             return 1 ; don't pass click event to OS
+        }
+    }
+
+    ; TODO: implement this for RESIZE_ANY_CORNER as well
+    ; RESIZE WINDOW fix
+    if (ENABLE_RESIZE && !dragging && resizing && !RESIZE_ANY_CORNER && !RESIZE_ALT_VERSION)
+    {
+        if (wParam = 0x200) ; WM_MOUSEMOVE
+        {
+            Gosub, MoveResize
+            return CallNextHook(hook, nCode, wParam, lParam)
         }
     }
 
@@ -839,7 +864,6 @@ KeyboardHook(nCode, wParam, lParam)
         }
         else if (wParam = 0x101) ; WM_KEYUP
         {
-            ;MsgBox, dragging: %dragging% resizing: %resizing%
             if (dragging)
                 CloseStartMenu()
         }
