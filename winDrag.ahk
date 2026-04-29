@@ -389,13 +389,23 @@ return
 
 
 
+
+~LWin & RButton::
+Gosub, StartResize
+return
+
+~LWin::
+if (GetKeyState("RButton", "P"))
+{
+    Gosub, StartResize
+}
+return
+
 ; =========================
 ; RESIZE WINDOW (Win + Right Mouse)
 ; =========================
-~LWin & RButton::
-if (!ENABLE_RESIZE)
-    return
-if (dragging)
+StartResize:
+if (!ENABLE_RESIZE || dragging || RESIZE_ALT_VERSION)
     return
 
 MouseGetPos, curX, curY, winId
@@ -449,10 +459,13 @@ resizing := true
 return
 
 ~LWin & RButton up::
-if (!ENABLE_RESIZE)
+if (!ENABLE_RESIZE || RESIZE_ALT_VERSION)
     return
-if (dragging)
-    return
+
+resizing := false
+
+; if (dragging)
+;     return
 
 ; global winX, winY
 ; WinGetPos, wx, wy,,, ahk_id %winId%
@@ -462,7 +475,6 @@ if (dragging)
 ; }
 
 PostMessage, 0x202, 0,,, ahk_id %winId% ; Exit resize
-resizing := false
 winId := 0
 winDown := false
 return
@@ -543,6 +555,7 @@ MouseHook(nCode, wParam, lParam)
     {
         winId := 0
         dragging := false
+        resizing := false
         return CallNextHook(hook, nCode, wParam, lParam)
     }
     ; now LWin is pressed (or a drag/resize is still active)
@@ -820,6 +833,12 @@ KeyboardHook(nCode, wParam, lParam)
     {
         if (wParam = 0x100) ; WM_KEYDOWN
         {
+            ; force release to prevent stuck state
+            if (GetKeyState("LButton", "P"))
+                DllCall("mouse_event", "UInt", 0x0004, "UInt", 0, "UInt", 0) ; LEFT UP
+            if (GetKeyState("RButton", "P"))
+                DllCall("mouse_event", "UInt", 0x0008, "UInt", 0, "UInt", 0) ; RIGHT UP
+
             winDown := true
             winId := 0
             dragging := false
@@ -829,7 +848,7 @@ KeyboardHook(nCode, wParam, lParam)
         {
             if (dragging)
                 CloseStartMenu()
-            ; we don't set winDown, etc, to false here to be able to drag/resize until releasing mouse button
+            ; we don't set winDown to false here to be able to drag/resize until releasing mouse button
         }
     }
 
