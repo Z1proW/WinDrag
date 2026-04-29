@@ -276,13 +276,13 @@ Gosub, UpdateSettingsButtons
 
 return
 
-GuiClose(GuiHwnd)
-{
-    MsgBox, 4,, Do you want to exit? (discards unsaved changes)
-    IfMsgBox, No
-        return true
-    Reload
-}
+GuiClose:
+MsgBox, 4,, Do you want to exit? (discards unsaved changes)
+IfMsgBox, No
+    return
+Gui, Hide
+Reload
+return
 
 ApplySettingsToGui()
 {
