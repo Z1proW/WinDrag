@@ -37,6 +37,7 @@ global SNAP_LEFT_RIGHT_TILES := 0  ; if true, left/right snap will trigger on th
 
 global ENABLE_ALWAYS_ON_TOP := 0  ; enable always-on-top functionality (Win + A)
 global ALWAYS_ON_TOP_KEYBIND := "A"  ; key to toggle always-on-top (used with Win key, e.g. Win + A)
+; make sure to update LoadSettingsFromDisk if you change defaults (TODO: I should probably refactor)
 
 
 ; =========================
@@ -167,7 +168,7 @@ IniRead, SNAP_THRESHOLD_TOP_BOT, %SettingsFile%, Settings, SNAP_THRESHOLD_TOP_BO
 IniRead, SNAP_THRESHOLD_LEFT_RIGHT, %SettingsFile%, Settings, SNAP_THRESHOLD_LEFT_RIGHT, 50
 IniRead, SNAP_LEFT_RIGHT_TILES, %SettingsFile%, Settings, SNAP_LEFT_RIGHT_TILES, 0
 
-IniRead, ENABLE_ALWAYS_ON_TOP, %SettingsFile%, Settings, ENABLE_ALWAYS_ON_TOP, 1
+IniRead, ENABLE_ALWAYS_ON_TOP, %SettingsFile%, Settings, ENABLE_ALWAYS_ON_TOP, 0
 IniRead, ALWAYS_ON_TOP_KEYBIND, %SettingsFile%, Settings, ALWAYS_ON_TOP_KEYBIND, A
 
 ; load keybinds based on settings
@@ -408,6 +409,8 @@ if (wasMax = 1)
     return
 
 ht := 17  ; default to bottom-right resize
+; global winX, winY
+; WinGetPos, winX, winY, winW, winH, ahk_id %winId%
 
 if (RESIZE_ANY_CORNER)
 {
@@ -450,6 +453,13 @@ if (!ENABLE_RESIZE)
     return
 if (dragging)
     return
+
+; global winX, winY
+; WinGetPos, wx, wy,,, ahk_id %winId%
+; if (winId != 0 && (winX != wx || winY != wy))
+; {
+;     MsgBox, winX: %winX% winY: %winY% wx: %wx% wy: %wy%
+; }
 
 PostMessage, 0x202, 0,,, ahk_id %winId% ; Exit resize
 resizing := false
@@ -813,12 +823,18 @@ KeyboardHook(nCode, wParam, lParam)
             winDown := true
             winId := 0
             dragging := false
+            resizing := false
         }
-        else if (wParam = 0x101 && dragging) ; WM_KEYUP
+        else if (wParam = 0x101) ; WM_KEYUP
         {
-            CloseStartMenu()
+            if (resizing)
+                PostMessage, 0x202, 0,,, ahk_id %winId% ; Exit resize
             winId := 0
+            if (dragging)
+                CloseStartMenu()
             dragging := false
+            resizing := false
+            ; we don't set winDown to false here to be able to drag/resize until releasing mouse button
         }
     }
 
