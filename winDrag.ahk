@@ -944,7 +944,7 @@ if (hook)
 if (hookProc)
     DllCall("GlobalFree", "Ptr", hookProc), hookProc := 0
 if (kHook)
-    DllCall("UnhookWindowsHookEx", "Ptr", kHook), kHook
+    DllCall("UnhookWindowsHookEx", "Ptr", kHook), kHook := 0
 if (kHookProc)
     DllCall("GlobalFree", "Ptr", kHookProc), kHookProc := 0
 
