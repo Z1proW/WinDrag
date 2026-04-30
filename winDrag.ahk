@@ -52,6 +52,8 @@ Hotkey, LWin & %ALWAYS_ON_TOP_KEYBIND%, ToggleAlwaysOnTop, On
 ; =========================
 ; LOAD GLOBAL STATE
 ; =========================
+global block_win_key := false
+global do_not_open_start_menu := false
 global dragging := false
 global resizing := false
 global winId := 0
@@ -365,6 +367,17 @@ Run, %A_ScriptDir%
 return
 
 
+; =========================
+; Avoid opening start menu when dragging/resizing with LWin
+; =========================
+LWin::return
+LWin up::
+if (!do_not_open_start_menu)
+    Send {LWin}
+else
+    do_not_open_start_menu := false
+return
+
 
 ; =========================
 ; CLOSE WINDOW (Win + Middle Click)
@@ -386,8 +399,6 @@ if (MINIMIZE_INSTEAD)
 
 WinClose, ahk_id %winId%
 return
-
-
 
 
 
@@ -454,6 +465,7 @@ WinActivate, ahk_id %winId%
 DllCall("ReleaseCapture")
 PostMessage, 0xA1, ht,,, ahk_id %winId% ; 17 = HTBOTTOMRIGHT
 resizing := true
+block_win_key := true
 return
 
 
@@ -461,6 +473,7 @@ MoveResize:
 WinGetPos, wx, wy,,, ahk_id %winId%
 if (winId != 0 && (winX != wx || winY != wy))
 {
+    DllCall("ReleaseCapture")
     PostMessage, 0x202, 0,,, ahk_id %winId% ; Exit resize
     ; set position to winX, winY, winW, winH
     DllCall("SetWindowPos"
@@ -552,7 +565,7 @@ return
 ; -----------------------------
 MouseHook(nCode, wParam, lParam)
 {
-    global dragging, winId
+    global dragging, resizing, winId, block_win_key
     global startMouseX, startMouseY
     global startWinX, startWinY
     global startWinW, startWinH
@@ -625,6 +638,7 @@ MouseHook(nCode, wParam, lParam)
             MouseGetPos, startMouseX, startMouseY
             WinGetPos, startWinX, startWinY,,, ahk_id %winId%
             dragging := true
+            block_win_key := true
             return 1 ; don't pass click event to OS
         }
         else if (wParam = 0x200 && dragging) ; WM_MOUSEMOVE
@@ -656,7 +670,7 @@ MouseHook(nCode, wParam, lParam)
                 SnapWindow(winId, curX, curY)
             }
 
-            CloseStartMenu()
+            block_win_key := true
 
             return 1 ; don't pass click event to OS
         }
@@ -698,6 +712,7 @@ MouseHook(nCode, wParam, lParam)
             MouseGetPos, startMouseX, startMouseY
             WinGetPos, startWinX, startWinY, startWinW, startWinH, ahk_id %winId%
             resizing := true
+            block_win_key := true
             return 1 ; don't pass click event to OS
         }
         else if (wParam = 0x200 && resizing) ; WM_MOUSEMOVE
@@ -717,7 +732,7 @@ MouseHook(nCode, wParam, lParam)
         else if (wParam = 0x205 && resizing) ; WM_RBUTTONUP
         {
             resizing := false
-            CloseStartMenu()
+            block_win_key := true
             return 1 ; don't pass click event to OS
         }
     }
@@ -822,13 +837,6 @@ SnapWindow(winId, curX, curY)
     return 0
 }
 
-; calling this prevents opening start menu by pressing Esc before LWin release
-CloseStartMenu()
-{
-    DllCall("keybd_event", "UChar", 0x1B, "UChar", 0, "UInt", 0, "UPtr", 0) ; Esc Down
-    DllCall("keybd_event", "UChar", 0x1B, "UChar", 0, "UInt", 2, "UPtr", 0) ; Esc Up
-}
-
 CallNextHook(hHook, nCode, wParam, lParam)
 {
     return DllCall("CallNextHookEx"
@@ -841,7 +849,7 @@ CallNextHook(hHook, nCode, wParam, lParam)
 KeyboardHook(nCode, wParam, lParam)
 {
     global kHook
-    global dragging, resizing, winId
+    global dragging, resizing, winId, block_win_key, do_not_open_start_menu
 
     if (nCode < 0)
         return CallNextHook(kHook, nCode, wParam, lParam)
@@ -864,8 +872,11 @@ KeyboardHook(nCode, wParam, lParam)
         }
         else if (wParam = 0x101) ; WM_KEYUP
         {
-            if (dragging)
-                CloseStartMenu()
+            if (block_win_key)
+            {
+                do_not_open_start_menu := true
+                block_win_key := false
+            }
         }
     }
 
