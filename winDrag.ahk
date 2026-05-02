@@ -251,25 +251,8 @@ return
 SaveSettings:
 Hotkey, LWin & %ALWAYS_ON_TOP_KEYBIND%, ToggleAlwaysOnTop, Off  ; unregister old keybind
 
-Gui, Submit, NoHide
-
 ; update variables with new settings
-global ENABLE_DRAG := ENABLE_DRAG
-global DRAG_ALT_VERSION := DRAG_ALT_VERSION
-global ENABLE_CLOSE := ENABLE_CLOSE
-global MINIMIZE_INSTEAD := MINIMIZE_INSTEAD
-global ENABLE_RESIZE := ENABLE_RESIZE
-global RESIZE_ANY_CORNER := RESIZE_ANY_CORNER
-global RESIZE_ALT_VERSION := RESIZE_ALT_VERSION
-global ENABLE_SNAP := ENABLE_SNAP
-global SNAP_HALF := SNAP_HALF
-global SNAP_MAXIMIZE := SNAP_MAXIMIZE
-global SNAP_MINIMIZE := SNAP_MINIMIZE
-global SNAP_THRESHOLD_TOP_BOT := SNAP_THRESHOLD_TOP_BOT
-global SNAP_THRESHOLD_LEFT_RIGHT := SNAP_THRESHOLD_LEFT_RIGHT
-global SNAP_LEFT_RIGHT_TILES := SNAP_LEFT_RIGHT_TILES
-global ENABLE_ALWAYS_ON_TOP := ENABLE_ALWAYS_ON_TOP
-global ALWAYS_ON_TOP_KEYBIND := ALWAYS_ON_TOP_KEYBIND
+Gui, Submit, NoHide
 
 ; update hotkeys
 Hotkey, LWin & %ALWAYS_ON_TOP_KEYBIND%, ToggleAlwaysOnTop
@@ -584,6 +567,7 @@ MouseHook(nCode, wParam, lParam)
     ; =========================
     if (ENABLE_DRAG && !resizing && !DRAG_ALT_VERSION)
     {
+        ; --- DRAG START ---
         if (wParam = 0x201 && GetKeyState("LWin", "P")) ; WM_LBUTTONDOWN
         {
             MouseGetPos,,, winId
@@ -641,6 +625,7 @@ MouseHook(nCode, wParam, lParam)
             block_win_key := true
             return 1 ; don't pass click event to OS
         }
+        ; --- DRAG UPDATE ---
         else if (wParam = 0x200 && dragging) ; WM_MOUSEMOVE
         {
             MouseGetPos, curX, curY
@@ -657,6 +642,7 @@ MouseHook(nCode, wParam, lParam)
                 , "Int", 0
                 , "UInt", 0x0001 | 0x0004) ; SWP_NOSIZE | SWP_NOZORDER
         }
+        ; --- DRAG END ---
         else if (wParam = 0x202 && dragging) ; WM_LBUTTONUP
         {
             dragging := false
@@ -694,6 +680,7 @@ MouseHook(nCode, wParam, lParam)
     ; =========================
     if (ENABLE_RESIZE && !dragging && RESIZE_ALT_VERSION)
     {
+        ; --- RESIZE START ---
         if (wParam = 0x204) ; WM_RBUTTONDOWN
         {
             MouseGetPos,,, winId
@@ -715,6 +702,7 @@ MouseHook(nCode, wParam, lParam)
             block_win_key := true
             return 1 ; don't pass click event to OS
         }
+        ; --- RESIZE UPDATE ---
         else if (wParam = 0x200 && resizing) ; WM_MOUSEMOVE
         {
             MouseGetPos, curX, curY
@@ -729,6 +717,7 @@ MouseHook(nCode, wParam, lParam)
                 , "int", startWinH + dy
                 , "uint", 0x0010 | 0x0004) ; SWP_NOACTIVATE | SWP_NOZORDER
         }
+        ; --- RESIZE END ---
         else if (wParam = 0x205 && resizing) ; WM_RBUTTONUP
         {
             resizing := false
