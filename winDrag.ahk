@@ -17,41 +17,58 @@ global SettingsFile := A_ScriptDir "\settings.ini"
 ; =========================
 ; DEFAULT SETTINGS
 ; =========================
-global ENABLE_DRAG := 1  ; Win + Left-click drag to move windows
-global DRAG_ALT_VERSION := 0  ; experimental
+DEFAULT_ENABLE_DRAG := 1  ; Win + Left-click drag to move windows
+DEFAULT_DRAG_ALT_VERSION := 0  ; experimental
 
-global ENABLE_CLOSE := 1  ; Win + middle-click to close
-global MINIMIZE_INSTEAD := 0  ; if true, Win + middle-click will minimize instead of close
+DEFAULT_ENABLE_CLOSE := 1  ; Win + middle-click to close
+DEFAULT_MINIMIZE_INSTEAD := 0  ; if true, Win + middle-click will minimize instead of close
 
-global ENABLE_RESIZE := 1  ; Win + right-click drag to resize
-global RESIZE_ANY_CORNER := 0  ; if true, Win + right-click drag will resize from the corner closest to the mouse, otherwise it always resizes from bottom-right
-global RESIZE_ALT_VERSION := 0  ; experimental
+DEFAULT_ENABLE_RESIZE := 1  ; Win + right-click drag to resize
+DEFAULT_RESIZE_ANY_CORNER := 0  ; if true, Win + right-click drag will resize from the corner closest to the mouse, otherwise it always resizes from bottom-right
+DEFAULT_RESIZE_ALT_VERSION := 0  ; experimental
 
-global ENABLE_SNAP := 1  ; enable dragging windows to screen edges to snap/resize them
-global SNAP_HALF := 1  ; if false, windows will not snap to left/right edges
-global SNAP_MAXIMIZE := 1  ; if false, dragging to top edge will not maximize
-global SNAP_MINIMIZE := 1  ; if false, dragging to bottom edge will not minimize
-global SNAP_THRESHOLD_TOP_BOT := 50  ; distance (pixels) from top/bottom edge to trigger maximize/minimize
-global SNAP_THRESHOLD_LEFT_RIGHT := 50  ; distance from left/right edge to trigger snap
-global SNAP_LEFT_RIGHT_TILES := 0  ; if true, left/right snap will trigger on the entire screen, effectively tiling the window
+DEFAULT_ENABLE_SNAP := 1  ; enable dragging windows to screen edges to snap/resize them
+DEFAULT_SNAP_HALF := 1  ; if false, windows will not snap to left/right edges
+DEFAULT_SNAP_MAXIMIZE := 1  ; if false, dragging to top edge will not maximize
+DEFAULT_SNAP_MINIMIZE := 1  ; if false, dragging to bottom edge will not minimize
+DEFAULT_SNAP_THRESHOLD_TOP_BOT := 50  ; distance (pixels) from top/bottom edge to trigger maximize/minimize
+DEFAULT_SNAP_THRESHOLD_LEFT_RIGHT := 50  ; distance from left/right edge to trigger snap
+DEFAULT_SNAP_LEFT_RIGHT_TILES := 0  ; if true, left/right snap will trigger on the entire screen, effectively tiling the window
 
-global ENABLE_ALWAYS_ON_TOP := 0  ; enable always-on-top functionality (Win + A)
-global ALWAYS_ON_TOP_KEYBIND := "A"  ; key to toggle always-on-top (used with Win key, e.g. Win + A)
-; make sure to update LoadSettingsFromDisk if you change defaults (TODO: I should probably refactor)
-
-
-; =========================
-; LOAD DEFAULT KEYBINDS
-; =========================
-; always on top keybind
-Hotkey, LWin & %ALWAYS_ON_TOP_KEYBIND%, ToggleAlwaysOnTop, On
-
+DEFAULT_ENABLE_ALWAYS_ON_TOP := 0  ; enable always-on-top functionality (Win + A)
+DEFAULT_ALWAYS_ON_TOP_KEYBIND := "A"  ; key to toggle always-on-top (used with Win key, e.g. Win + A)
 
 
 
 ; =========================
 ; LOAD GLOBAL STATE
 ; =========================
+; settings
+global ENABLE_DRAG := DEFAULT_ENABLE_DRAG
+global DRAG_ALT_VERSION := DEFAULT_DRAG_ALT_VERSION
+
+global ENABLE_CLOSE := DEFAULT_ENABLE_CLOSE
+global MINIMIZE_INSTEAD := DEFAULT_MINIMIZE_INSTEAD
+
+global ENABLE_RESIZE := DEFAULT_ENABLE_RESIZE
+global RESIZE_ANY_CORNER := DEFAULT_RESIZE_ANY_CORNER
+global RESIZE_ALT_VERSION := DEFAULT_RESIZE_ALT_VERSION
+
+global ENABLE_SNAP := DEFAULT_ENABLE_SNAP
+global SNAP_HALF := DEFAULT_SNAP_HALF
+global SNAP_MAXIMIZE := DEFAULT_SNAP_MAXIMIZE
+global SNAP_MINIMIZE := DEFAULT_SNAP_MINIMIZE
+global SNAP_THRESHOLD_TOP_BOT := DEFAULT_SNAP_THRESHOLD_TOP_BOT
+global SNAP_THRESHOLD_LEFT_RIGHT := DEFAULT_SNAP_THRESHOLD_LEFT_RIGHT
+global SNAP_LEFT_RIGHT_TILES := DEFAULT_SNAP_LEFT_RIGHT_TILES
+
+global ENABLE_ALWAYS_ON_TOP := DEFAULT_ENABLE_ALWAYS_ON_TOP
+global ALWAYS_ON_TOP_KEYBIND := DEFAULT_ALWAYS_ON_TOP_KEYBIND
+; load always on top keybind
+Hotkey, LWin & %ALWAYS_ON_TOP_KEYBIND%, ToggleAlwaysOnTop, On
+
+
+; state for dragging/resizing
 global block_win_key := false
 global do_not_open_start_menu := false
 global dragging := false
@@ -151,27 +168,27 @@ return
 LoadSettingsFromDisk:
 Hotkey, LWin & %ALWAYS_ON_TOP_KEYBIND%, ToggleAlwaysOnTop, Off  ; unregister old keybind
 
-IniRead, ENABLE_DRAG, %SettingsFile%, Settings, ENABLE_DRAG, 1
-IniRead, DRAG_ALT_VERSION, %SettingsFile%, Settings, DRAG_ALT_VERSION, 0
+IniRead, ENABLE_DRAG, %SettingsFile%, Settings, ENABLE_DRAG, %DEFAULT_ENABLE_DRAG%
+IniRead, DRAG_ALT_VERSION, %SettingsFile%, Settings, DRAG_ALT_VERSION, %DEFAULT_DRAG_ALT_VERSION%
 
-IniRead, ENABLE_CLOSE, %SettingsFile%, Settings, ENABLE_CLOSE, 1
-IniRead, MINIMIZE_INSTEAD, %SettingsFile%, Settings, MINIMIZE_INSTEAD, 0
+IniRead, ENABLE_CLOSE, %SettingsFile%, Settings, ENABLE_CLOSE, %DEFAULT_ENABLE_CLOSE%
+IniRead, MINIMIZE_INSTEAD, %SettingsFile%, Settings, MINIMIZE_INSTEAD, %DEFAULT_MINIMIZE_INSTEAD%
 
-IniRead, ENABLE_RESIZE, %SettingsFile%, Settings, ENABLE_RESIZE, 1
-IniRead, RESIZE_ANY_CORNER, %SettingsFile%, Settings, RESIZE_ANY_CORNER, 0
-IniRead, RESIZE_ALT_VERSION, %SettingsFile%, Settings, RESIZE_ALT_VERSION, 0
+IniRead, ENABLE_RESIZE, %SettingsFile%, Settings, ENABLE_RESIZE, %DEFAULT_ENABLE_RESIZE%
+IniRead, RESIZE_ANY_CORNER, %SettingsFile%, Settings, RESIZE_ANY_CORNER, %DEFAULT_RESIZE_ANY_CORNER%
+IniRead, RESIZE_ALT_VERSION, %SettingsFile%, Settings, RESIZE_ALT_VERSION, %DEFAULT_RESIZE_ALT_VERSION%
 
-IniRead, ENABLE_SNAP, %SettingsFile%, Settings, ENABLE_SNAP, 1
-IniRead, SNAP_HALF, %SettingsFile%, Settings, SNAP_HALF, 1
-IniRead, SNAP_MAXIMIZE, %SettingsFile%, Settings, SNAP_MAXIMIZE, 1
-IniRead, SNAP_MINIMIZE, %SettingsFile%, Settings, SNAP_MINIMIZE, 1
+IniRead, ENABLE_SNAP, %SettingsFile%, Settings, ENABLE_SNAP, %DEFAULT_ENABLE_SNAP%
+IniRead, SNAP_HALF, %SettingsFile%, Settings, SNAP_HALF, %DEFAULT_SNAP_HALF%
+IniRead, SNAP_MAXIMIZE, %SettingsFile%, Settings, SNAP_MAXIMIZE, %DEFAULT_SNAP_MAXIMIZE%
+IniRead, SNAP_MINIMIZE, %SettingsFile%, Settings, SNAP_MINIMIZE, %DEFAULT_SNAP_MINIMIZE%
 
-IniRead, SNAP_THRESHOLD_TOP_BOT, %SettingsFile%, Settings, SNAP_THRESHOLD_TOP_BOT, 50
-IniRead, SNAP_THRESHOLD_LEFT_RIGHT, %SettingsFile%, Settings, SNAP_THRESHOLD_LEFT_RIGHT, 50
-IniRead, SNAP_LEFT_RIGHT_TILES, %SettingsFile%, Settings, SNAP_LEFT_RIGHT_TILES, 0
+IniRead, SNAP_THRESHOLD_TOP_BOT, %SettingsFile%, Settings, SNAP_THRESHOLD_TOP_BOT, %DEFAULT_SNAP_THRESHOLD_TOP_BOT%
+IniRead, SNAP_THRESHOLD_LEFT_RIGHT, %SettingsFile%, Settings, SNAP_THRESHOLD_LEFT_RIGHT, %DEFAULT_SNAP_THRESHOLD_LEFT_RIGHT%
+IniRead, SNAP_LEFT_RIGHT_TILES, %SettingsFile%, Settings, SNAP_LEFT_RIGHT_TILES, %DEFAULT_SNAP_LEFT_RIGHT_TILES%
 
-IniRead, ENABLE_ALWAYS_ON_TOP, %SettingsFile%, Settings, ENABLE_ALWAYS_ON_TOP, 0
-IniRead, ALWAYS_ON_TOP_KEYBIND, %SettingsFile%, Settings, ALWAYS_ON_TOP_KEYBIND, A
+IniRead, ENABLE_ALWAYS_ON_TOP, %SettingsFile%, Settings, ENABLE_ALWAYS_ON_TOP, %DEFAULT_ALWAYS_ON_TOP%
+IniRead, ALWAYS_ON_TOP_KEYBIND, %SettingsFile%, Settings, ALWAYS_ON_TOP_KEYBIND, %DEFAULT_ALWAYS_ON_TOP_KEYBIND%
 
 ; load keybinds based on settings
 Hotkey, LWin & %ALWAYS_ON_TOP_KEYBIND%, ToggleAlwaysOnTop, On
@@ -251,14 +268,13 @@ return
 SaveSettings:
 Hotkey, LWin & %ALWAYS_ON_TOP_KEYBIND%, ToggleAlwaysOnTop, Off  ; unregister old keybind
 
-; update variables with new settings
 Gui, Submit, NoHide
-
-; update hotkeys
-Hotkey, LWin & %ALWAYS_ON_TOP_KEYBIND%, ToggleAlwaysOnTop
 
 Gosub, SaveSettingsOnDisk
 Gosub, UpdateSettingsButtons
+
+; update hotkeys
+Hotkey, LWin & %ALWAYS_ON_TOP_KEYBIND%, ToggleAlwaysOnTop, On
 
 return
 
