@@ -18,7 +18,6 @@ global SettingsFile := A_ScriptDir "\settings.ini"
 ; DEFAULT SETTINGS
 ; =========================
 DEFAULT_ENABLE_DRAG := 1  ; Win + Left-click drag to move windows
-DEFAULT_DRAG_ALT_VERSION := 0  ; experimental
 
 DEFAULT_ENABLE_CLOSE := 1  ; Win + middle-click to close
 DEFAULT_MINIMIZE_INSTEAD := 0  ; if true, Win + middle-click will minimize instead of close
@@ -45,7 +44,6 @@ DEFAULT_ALWAYS_ON_TOP_KEYBIND := "A"  ; key to toggle always-on-top (used with W
 ; =========================
 ; settings
 global ENABLE_DRAG := DEFAULT_ENABLE_DRAG
-global DRAG_ALT_VERSION := DEFAULT_DRAG_ALT_VERSION
 
 global ENABLE_CLOSE := DEFAULT_ENABLE_CLOSE
 global MINIMIZE_INSTEAD := DEFAULT_MINIMIZE_INSTEAD
@@ -116,23 +114,29 @@ Gui, Add, Button, x+10 vBtnRestoreDefaults gRestoreDefaults, Restore Defaults
 Gui, Add, Button, x+10 vBtnRestoreBackup gRestoreBackup, Restore Backup
 
 ; add tabs for different categories of settings
-Gui, Add, Tab2, Buttons x13 y+10 vSETTINGS_TAB, Drag|Close|Resize|Snap|Always-on-top
+Gui, Add, Tab2, Buttons x13 y+10 vSETTINGS_TAB, Drag/Close/Resize|Snap|Always on top
+
+Gui, Tab, Drag/Close/Resize
 
 ; drag category
-Gui, Tab, Drag
-Gui, Add, CheckBox, y+10 vENABLE_DRAG Checked%ENABLE_DRAG%, Enable Win + Left-click drag
-Gui, Add, CheckBox, vDRAG_ALT_VERSION Checked%DRAG_ALT_VERSION%, Use experimental drag method (moves mouse to title bar)
+Gui, Add, CheckBox, y+10 vENABLE_DRAG Checked%ENABLE_DRAG%, Enable moving windows with Win + Left-click drag
+Gui, Add, Text,,
 
 ; close category
-Gui, Tab, Close
-Gui, Add, CheckBox, y+10 vENABLE_CLOSE Checked%ENABLE_CLOSE%, Enable Win + Middle-click close
-Gui, Add, CheckBox, vMINIMIZE_INSTEAD Checked%MINIMIZE_INSTEAD%, Minimize instead of close
+Gui, Add, Text, y+10, Action on Win + Middle-click
+; Gui, Add, CheckBox, y+10 vENABLE_CLOSE Checked%ENABLE_CLOSE%, Enable Win + Middle-click close
+; Gui, Add, CheckBox, vMINIMIZE_INSTEAD Checked%MINIMIZE_INSTEAD%, Minimize instead of close
+var := (!ENABLE_CLOSE) ? 1 : ((MINIMIZE_INSTEAD) ? 3 : 2)
+Gui, Add, DropDownList, w200 vCLOSE_MODE Choose%var%, Disabled|Close|Minimize instead
+Gui, Add, Text,,
 
 ; resize category
-Gui, Tab, Resize
-Gui, Add, CheckBox, y+10 vENABLE_RESIZE Checked%ENABLE_RESIZE%, Enable Win + Right-click drag resize  ;; TODO make a dropdown menu for different resize methods
-Gui, Add, CheckBox, vRESIZE_ANY_CORNER Checked%RESIZE_ANY_CORNER%, Resize from any corner (instead of just bottom-right)
-Gui, Add, CheckBox, vRESIZE_ALT_VERSION Checked%RESIZE_ALT_VERSION%, Use experimental resize method (resizes around center, may have visual artifacts)
+Gui, Add, Text, y+10, Resize on Win + Right-click drag
+; Gui, Add, CheckBox, y+10 vENABLE_RESIZE Checked%ENABLE_RESIZE%, Enable Win + Right-click drag resize  ;; TODO make a dropdown menu for different resize methods
+; Gui, Add, CheckBox, vRESIZE_ANY_CORNER Checked%RESIZE_ANY_CORNER%, Resize from any corner (instead of just bottom-right)
+; Gui, Add, CheckBox, vRESIZE_ALT_VERSION Checked%RESIZE_ALT_VERSION%, Use experimental resize method (resizes around center, may have visual artifacts)
+var := (!ENABLE_RESIZE) ? 1 : ((RESIZE_ALT_VERSION) ? 4 : (RESIZE_ANY_CORNER ? 3 : 2))
+Gui, Add, DropDownList, w200 vRESIZE_MODE Choose%var%, Disabled|Bottom right|Any corner|Around center (Experimental)
 
 ; snap category
 Gui, Tab, Snap
@@ -157,10 +161,10 @@ Gui, Add, Text, vSnapTBText w250, %SNAP_THRESHOLD_TOP_BOT%px
 Gui, Add, Text,,
 
 ; always-on-top category
-Gui, Tab, Always-on-top
+Gui, Tab, Always on top
 Gui, Add, CheckBox, y+10 vENABLE_ALWAYS_ON_TOP Checked%ENABLE_ALWAYS_ON_TOP%, Enable always-on-top toggle (Win + %ALWAYS_ON_TOP_KEYBIND%)
-Gui, Add, Edit, w100 vALWAYS_ON_TOP_KEYBIND, %ALWAYS_ON_TOP_KEYBIND%
-Gui, Add, Text,, (Change the keybind for always-on-top. Default is "A", used with Win key, e.g. Win + A)
+Gui, Add, Edit, w40 vALWAYS_ON_TOP_KEYBIND, %ALWAYS_ON_TOP_KEYBIND%
+Gui, Add, Text, x+10, Edit keybind (without Win modifier, e.g. A)
 
 
 return
@@ -169,7 +173,6 @@ LoadSettingsFromDisk:
 Hotkey, LWin & %ALWAYS_ON_TOP_KEYBIND%, ToggleAlwaysOnTop, Off  ; unregister old keybind
 
 IniRead, ENABLE_DRAG, %SettingsFile%, Settings, ENABLE_DRAG, %DEFAULT_ENABLE_DRAG%
-IniRead, DRAG_ALT_VERSION, %SettingsFile%, Settings, DRAG_ALT_VERSION, %DEFAULT_DRAG_ALT_VERSION%
 
 IniRead, ENABLE_CLOSE, %SettingsFile%, Settings, ENABLE_CLOSE, %DEFAULT_ENABLE_CLOSE%
 IniRead, MINIMIZE_INSTEAD, %SettingsFile%, Settings, MINIMIZE_INSTEAD, %DEFAULT_MINIMIZE_INSTEAD%
@@ -270,6 +273,13 @@ Hotkey, LWin & %ALWAYS_ON_TOP_KEYBIND%, ToggleAlwaysOnTop, Off  ; unregister old
 
 Gui, Submit, NoHide
 
+ENABLE_CLOSE := (CLOSE_MODE != "Disabled") ? 1 : 0
+MINIMIZE_INSTEAD := (CLOSE_MODE = "Minimize instead") ? 1 : 0
+
+ENABLE_RESIZE := (RESIZE_MODE != "Disabled") ? 1 : 0
+RESIZE_ANY_CORNER := (RESIZE_MODE = "Any corner") ? 1 : 0
+RESIZE_ALT_VERSION := (RESIZE_MODE = "Around center (Experimental)") ? 1 : 0
+
 Gosub, SaveSettingsOnDisk
 Gosub, UpdateSettingsButtons
 
@@ -289,7 +299,6 @@ return
 ApplySettingsToGui()
 {
     GuiControl,, ENABLE_DRAG, %ENABLE_DRAG%
-    GuiControl,, DRAG_ALT_VERSION, %DRAG_ALT_VERSION%
 
     GuiControl,, ENABLE_CLOSE, %ENABLE_CLOSE%
     GuiControl,, MINIMIZE_INSTEAD, %MINIMIZE_INSTEAD%
@@ -503,43 +512,6 @@ return
 
 
 ; =========================
-; NATIVE DRAG [ALT VERSION] (Win + Left Mouse)
-; moves mouse on the title bar
-; =========================
-~LWin & LButton::
-if (!ENABLE_DRAG)
-    return
-if (!DRAG_ALT_VERSION)
-    return
-
-MouseGetPos, mx, my, winId
-if (!winId)
-    return
-
-WinGetPos, x, y, w, h, ahk_id %winId%
-WinActivate, ahk_id %winId%
-
-; approximate title bar position
-titleX := x + (w // 2)
-titleY := y + 10   ; safely inside title bar area
-
-DllCall("SetCursorPos", "int", titleX, "int", titleY)
-
-; simulate real click on title bar
-Send {LButton down}
-return
-
-~LWin & LButton Up::
-if (!ENABLE_DRAG)
-    return
-if (!DRAG_ALT_VERSION)
-    return
-Send {LButton up}
-return
-
-
-
-; =========================
 ; ALWAYS ON TOP KEYBIND (Win + A by default)
 ; toggles always-on-top for the active window
 ; =========================
@@ -581,7 +553,7 @@ MouseHook(nCode, wParam, lParam)
     ; =========================
     ; DRAG LOGIC
     ; =========================
-    if (ENABLE_DRAG && !resizing && !DRAG_ALT_VERSION)
+    if (ENABLE_DRAG && !resizing)
     {
         ; --- DRAG START ---
         if (wParam = 0x201 && GetKeyState("LWin", "P")) ; WM_LBUTTONDOWN
@@ -950,7 +922,6 @@ if FileExist(SettingsFile)
 
 ; write settings
 IniWrite, %ENABLE_DRAG%, %SettingsFile%, Settings, ENABLE_DRAG
-IniWrite, %DRAG_ALT_VERSION%, %SettingsFile%, Settings, DRAG_ALT_VERSION
 
 IniWrite, %ENABLE_CLOSE%, %SettingsFile%, Settings, ENABLE_CLOSE
 IniWrite, %MINIMIZE_INSTEAD%, %SettingsFile%, Settings, MINIMIZE_INSTEAD
