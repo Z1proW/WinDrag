@@ -436,7 +436,12 @@ WinGet, wasMax, MinMax, ahk_id %winId%
 if (wasMax = 1)
     return
 
-ht := 17  ; default to bottom-right resize
+; exclude non resizable windows
+WinGet, style, Style, ahk_id %winId%
+if !(style & 0x40000)  ; WS_SIZEBOX
+    return
+
+global ht := 17  ; default to bottom-right resize
 WinGetPos, winX, winY, winW, winH, ahk_id %winId%
 
 if (RESIZE_ANY_CORNER)
@@ -499,6 +504,10 @@ if (winId != 0 && (winX != wx || winY != wy))
 }
 return
 
+MoveResize(corner) {
+    ; TODO
+}
+
 
 EndResize:
 if (!ENABLE_RESIZE || RESIZE_ALT_VERSION)
@@ -536,7 +545,7 @@ return
 ; -----------------------------
 MouseHook(nCode, wParam, lParam)
 {
-    global dragging, resizing, winId, block_win_key
+    global dragging, resizing, winId, block_win_key, ht
     global startMouseX, startMouseY
     global startWinX, startWinY
     global startWinW, startWinH
@@ -652,11 +661,14 @@ MouseHook(nCode, wParam, lParam)
 
     ; TODO: implement this for RESIZE_ANY_CORNER as well
     ; RESIZE WINDOW fix
-    if (ENABLE_RESIZE && !dragging && resizing && !RESIZE_ANY_CORNER && !RESIZE_ALT_VERSION)
+    if (ENABLE_RESIZE && !dragging && resizing && !RESIZE_ALT_VERSION)
     {
         if (wParam = 0x200) ; WM_MOUSEMOVE
         {
-            Gosub, MoveResize
+            if (RESIZE_ANY_CORNER)
+                MoveResize(corner := ht)
+            else
+                Gosub, MoveResize
             return CallNextHook(hook, nCode, wParam, lParam)
         }
     }
