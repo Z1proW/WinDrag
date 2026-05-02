@@ -132,7 +132,7 @@ Gui, Add, Text,,
 
 ; resize category
 Gui, Add, Text, y+10, Resize on Win + Right-click drag
-; Gui, Add, CheckBox, y+10 vENABLE_RESIZE Checked%ENABLE_RESIZE%, Enable Win + Right-click drag resize  ;; TODO make a dropdown menu for different resize methods
+; Gui, Add, CheckBox, y+10 vENABLE_RESIZE Checked%ENABLE_RESIZE%, Enable Win + Right-click drag resize
 ; Gui, Add, CheckBox, vRESIZE_ANY_CORNER Checked%RESIZE_ANY_CORNER%, Resize from any corner (instead of just bottom-right)
 ; Gui, Add, CheckBox, vRESIZE_ALT_VERSION Checked%RESIZE_ALT_VERSION%, Use experimental resize method (resizes around center, may have visual artifacts)
 var := (!ENABLE_RESIZE) ? 1 : ((RESIZE_ALT_VERSION) ? 4 : (RESIZE_ANY_CORNER ? 3 : 2))
