@@ -13,6 +13,14 @@ CoordMode, Mouse, Screen
 
 
 global SettingsFile := A_ScriptDir "\settings.ini"
+global HTTOPLEFT := 13
+global HTTOP := 12
+global HTTOPRIGHT := 14
+global HTLEFT := 10
+global HTRIGHT := 11
+global HTBOTTOMLEFT := 16
+global HTBOTTOM := 15
+global HTBOTTOMRIGHT := 17
 
 ; =========================
 ; DEFAULT SETTINGS
@@ -43,6 +51,8 @@ DEFAULT_ALWAYS_ON_TOP_KEYBIND := "A"  ; key to toggle always-on-top (used with W
 ; LOAD GLOBAL STATE
 ; =========================
 ; settings
+global ht := HTBOTTOMRIGHT  ; current resize corner
+
 global ENABLE_DRAG := DEFAULT_ENABLE_DRAG
 
 global ENABLE_CLOSE := DEFAULT_ENABLE_CLOSE
@@ -409,7 +419,7 @@ WinClose, ahk_id %winId%
 return
 
 
-
+; TODO add option to resize with mouse wheel
 ; =========================
 ; RESIZE WINDOW (Win + Right Mouse)
 ; =========================
@@ -441,7 +451,7 @@ WinGet, style, Style, ahk_id %winId%
 if !(style & 0x40000)  ; WS_SIZEBOX
     return
 
-global ht := 17  ; default to bottom-right resize
+global ht := HTBOTTOMRIGHT  ; default to bottom-right resize
 WinGetPos, winX, winY, winW, winH, ahk_id %winId%
 
 if (RESIZE_ANY_CORNER)
@@ -457,21 +467,21 @@ if (RESIZE_ANY_CORNER)
     ;
 
     if (resizeTop && resizeLeft)
-        ht := 13  ; HTTOPLEFT
+        ht := HTTOPLEFT
     else if (resizeTop && resizeRight)
-        ht := 14  ; HTTOPRIGHT
+        ht := HTTOPRIGHT
     else if (resizeBottom && resizeLeft)
-        ht := 16  ; HTBOTTOMLEFT
+        ht := HTBOTTOMLEFT
     else if (resizeBottom && resizeRight)
-        ht := 17  ; HTBOTTOMRIGHT
+        ht := HTBOTTOMRIGHT
     else if (resizeLeft)
-        ht := 10  ; HTLEFT
+        ht := HTLEFT
     else if (resizeRight)
-        ht := 11  ; HTRIGHT
+        ht := HTRIGHT
     else if (resizeTop)
-        ht := 12  ; HTTOP
+        ht := HTTOP
     else if (resizeBottom)
-        ht := 15  ; HTBOTTOM
+        ht := HTBOTTOM
 }
 
 WinActivate, ahk_id %winId%
@@ -482,30 +492,53 @@ block_win_key := true
 return
 
 
-MoveResize:
-WinGetPos, wx, wy,,, ahk_id %winId%
-if (winId != 0 && (winX != wx || winY != wy))
-{
-    DllCall("ReleaseCapture")
-    PostMessage, 0x202, 0,,, ahk_id %winId% ; Exit resize
-    ; set position to winX, winY, winW, winH
-    DllCall("SetWindowPos"
-        , "ptr", winId
-        , "ptr", 0
-        , "int", winX
-        , "int", winY
-        , "int", winW
-        , "int", winH
-        , "uint", 0x0004) ; SWP_NOZORDER
-    ; start resize again
-    WinActivate, ahk_id %winId%
-    DllCall("ReleaseCapture")
-    PostMessage, 0xA1, ht,,, ahk_id %winId% ; 17 = HTBOTTOMRIGHT
-}
-return
 
 MoveResize(corner) {
-    ; TODO
+    if (winId == 0)
+        return
+    WinGetPos, wx, wy, ww, wh, ahk_id %winId%
+
+    ; if a snapped window was moved/resized by windows, set its position/size
+    resizedByWindows := false
+    if (corner == HTBOTTOMRIGHT)
+    {
+        if (winX != wx || winY != wy)  ; top left moved
+            resizedByWindows := true
+    }
+    else if (corner == HTTOPLEFT)
+    {
+        if (winX+winW != wx+ww || winY+winH != wy+wh)  ; bottom right moved
+            resizedByWindows := true
+    }
+    else if (corner == HTTOPRIGHT)  ; bottom left moved
+    {
+        if (winX != wx || winY+winH != wy+wh)  ; bottom left moved
+            resizedByWindows := true
+    }
+    else if (corner == HTBOTTOMLEFT)
+    {
+        if (winY != wy || winX+winW != wx+ww)  ; top right moved
+            resizedByWindows := true
+    }
+
+    if (resizedByWindows)
+    {
+        DllCall("ReleaseCapture")
+        PostMessage, 0x202, 0,,, ahk_id %winId% ; Exit resize
+        ; set position to winX, winY, winW, winH
+        DllCall("SetWindowPos"
+            , "ptr", winId
+            , "ptr", 0
+            , "int", winX
+            , "int", winY
+            , "int", winW
+            , "int", winH
+            , "uint", 0x0004) ; SWP_NOZORDER
+        ; start resize again
+        WinActivate, ahk_id %winId%
+        DllCall("ReleaseCapture")
+        PostMessage, 0xA1, ht,,, ahk_id %winId%
+    }
 }
 
 
@@ -665,10 +698,7 @@ MouseHook(nCode, wParam, lParam)
     {
         if (wParam = 0x200) ; WM_MOUSEMOVE
         {
-            if (RESIZE_ANY_CORNER)
-                MoveResize(corner := ht)
-            else
-                Gosub, MoveResize
+            MoveResize(ht)
             return CallNextHook(hook, nCode, wParam, lParam)
         }
     }
