@@ -427,8 +427,16 @@ return
 Gosub, StartResize
 return
 
+~RButton up::
+if (resizing)
+    Gosub, EndResize
+return
+
 ~LWin & RButton up::
-Gosub, EndResize
+if (resizing)
+    Gosub, EndResize
+else
+    Send {RButton up}
 return
 
 
@@ -496,6 +504,14 @@ return
 MoveResize(corner) {
     if (winId == 0)
         return
+
+    if (!resizing)
+    {
+        winId := 0
+        Gosub, EndResize
+        return
+    }
+
     WinGetPos, wx, wy, ww, wh, ahk_id %winId%
 
     ; if a snapped window was moved/resized by windows, set its position/size
@@ -547,7 +563,7 @@ if (!ENABLE_RESIZE || RESIZE_ALT_VERSION)
     return
 
 resizing := false
-
+DllCall("ReleaseCapture")
 PostMessage, 0x202, 0,,, ahk_id %winId% ; Exit resize
 return
 
@@ -880,14 +896,15 @@ KeyboardHook(nCode, wParam, lParam)
         if (wParam = 0x100) ; WM_KEYDOWN
         {
             ; force release to prevent stuck state
-            if (GetKeyState("LButton", "P"))
-                DllCall("mouse_event", "UInt", 0x0004, "UInt", 0, "UInt", 0) ; LEFT UP
-            if (GetKeyState("RButton", "P"))
-                DllCall("mouse_event", "UInt", 0x0008, "UInt", 0, "UInt", 0) ; RIGHT UP
+            ; if (GetKeyState("LButton", "P"))
+            ;     DllCall("mouse_event", "UInt", 0x0004, "UInt", 0, "UInt", 0) ; LEFT UP
+            ; if (GetKeyState("RButton", "P"))
+            ;     DllCall("mouse_event", "UInt", 0x0008, "UInt", 0, "UInt", 0) ; RIGHT UP
 
-            winId := 0
-            dragging := false
-            resizing := false
+            ; winId := 0
+            ; dragging := false
+            ; resizing := false
+            ; do_not_open_start_menu := false
         }
         else if (wParam = 0x101) ; WM_KEYUP
         {
