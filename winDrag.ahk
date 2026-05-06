@@ -496,7 +496,6 @@ WinActivate, ahk_id %winId%
 DllCall("ReleaseCapture")
 PostMessage, 0xA1, ht,,, ahk_id %winId% ; 17 = HTBOTTOMRIGHT
 resizing := true
-block_win_key := true
 return
 
 
@@ -765,7 +764,6 @@ MouseHook(nCode, wParam, lParam)
         else if (wParam = 0x205 && resizing) ; WM_RBUTTONUP
         {
             resizing := false
-            block_win_key := true
             return 1 ; don't pass click event to OS
         }
     }
