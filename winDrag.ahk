@@ -390,10 +390,10 @@ return
 ; =========================
 LWin::return
 LWin up::
-if (!do_not_open_start_menu)
-    Send {LWin}
-else
+if (do_not_open_start_menu || dragging || resizing)
     do_not_open_start_menu := false
+else
+    Send {LWin}
 return
 
 
@@ -701,8 +701,6 @@ MouseHook(nCode, wParam, lParam)
                 MouseGetPos, curX, curY
                 SnapWindow(winId, curX, curY)
             }
-
-            block_win_key := true
 
             return 1 ; don't pass click event to OS
         }
