@@ -54,6 +54,8 @@ https://github.com/user-attachments/assets/7ecf3290-65a8-4647-8a65-e2ec6ce8db84
 
 You can tweak behavior by using the GUI Settings in the tray icon.
 
+<img width="498" height="467" alt="Capture d&#39;écran 2026-04-27 210913" src="https://github.com/user-attachments/assets/b3d29f2b-0229-48fe-8b10-48e5682dfd8f" />
+
 ------------------------------------------------------------------------
 
 ## 🚀 Usage
